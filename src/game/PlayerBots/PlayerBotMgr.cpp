@@ -965,8 +965,11 @@ bool ChatHandler::HandlePartyBotPauseHelper(Player* pTarget, bool pause)
     return false;
 }
 
-bool ChatHandler::HandlePartyBotPauseCommand(char* /*args*/)
+bool ChatHandler::HandlePartyBotPauseCommand(char* args)
 {
+    if (strcmp(args, "all") == 0)
+        return HandlePartyBotPauseAllCommand(args)
+    
     Player* pTarget = GetSelectedPlayer();
     if (!pTarget)
     {
@@ -985,6 +988,9 @@ bool ChatHandler::HandlePartyBotPauseCommand(char* /*args*/)
 
 bool ChatHandler::HandlePartyBotUnpauseCommand(char* /*args*/)
 {
+    if (strcmp(args, "all") == 0)
+        return HandlePartyBotUnpauseAllCommand(args);
+    
     Player* pTarget = GetSelectedPlayer();
     if (!pTarget)
     {
