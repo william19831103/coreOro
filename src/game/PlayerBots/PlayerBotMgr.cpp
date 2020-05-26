@@ -986,7 +986,7 @@ bool ChatHandler::HandlePartyBotPauseCommand(char* args)
     return true;
 }
 
-bool ChatHandler::HandlePartyBotUnpauseCommand(char* /*args*/)
+bool ChatHandler::HandlePartyBotUnpauseCommand(char* args)
 {
     if (strcmp(args, "all") == 0)
         return HandlePartyBotUnpauseAllCommand(args);
