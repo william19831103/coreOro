@@ -646,7 +646,7 @@ struct NecroticShard : public ScriptedAI
     }
 
     // No healing possible.
-    void HealedBy(Unit* pHealer, uint32& uiHealedAmount) override
+    void HealedBy(Unit* pHealer, uint32& uiHealedAmount)
     {
         uiHealedAmount = 0;
     }

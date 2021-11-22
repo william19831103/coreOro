@@ -85,6 +85,37 @@ enum Classes
     CLASS_DRUID         = 11,
 };
 
+enum Specifications
+{
+    WarriorProtection = 163,
+    WarriorFury = 164,
+    WarriorArms = 161,
+    WarlockDemonology = 303,
+    WarlockDestruction = 301,
+    WarlockAffliction = 302,
+    ShamanRestoration = 262,
+    ShamanEnhancement = 263,
+    ShamanElementalCombat = 261,
+    RogueSubtlety = 183,
+    RogueCombat = 181,
+    RogueAssassination = 182,
+    PriestShadow = 203,
+    PriestHoly = 202,
+    PriestDiscipline = 201,
+    PaladinProtection = 383,
+    PaladinHoly = 382,
+    PaladinRetribution = 381,
+    MageFrost = 61,
+    MageFire = 41,
+    MageArcane = 81,
+    HunterSurvival = 362,
+    HunterMarksmanship = 363,
+    HunterBeastMastery = 361,
+    DruidRestoration = 282,
+    DruidFeralCombat = 281,
+    DruidBalance = 283,
+};
+
 // max+1 for player class
 #define MAX_CLASSES       12
 
@@ -1496,12 +1527,28 @@ enum BanReturn
 // Indexes of BattlemasterList.dbc
 enum BattleGroundTypeId
 {
-    BATTLEGROUND_TYPE_NONE     = 0,
-    BATTLEGROUND_AV            = 1,
-    BATTLEGROUND_WS            = 2,
-    BATTLEGROUND_AB            = 3,
+    BATTLEGROUND_TYPE_NONE  = 0,
+    BATTLEGROUND_AV         = 1,
+    BATTLEGROUND_WS         = 2,
+    BATTLEGROUND_AB         = 3,
+    BATTLEGROUND_NA1v1      = 4,
+    BATTLEGROUND_NA2v2      = 5,
+    BATTLEGROUND_NA3v3      = 6,
+    BATTLEGROUND_NA5v5      = 7,
+    BATTLEGROUND_BE1v1      = 8,
+    BATTLEGROUND_BE2v2      = 9,
+    BATTLEGROUND_BE3v3      = 10,
+    BATTLEGROUND_BE5v5      = 11,
+    BATTLEGROUND_RL1v1      = 12,
+    BATTLEGROUND_RL2v2      = 13,
+    BATTLEGROUND_RL3v3      = 14,
+    BATTLEGROUND_RL5v5      = 15,
+    BATTLEGROUND_DS1v1      = 16,
+    BATTLEGROUND_DS2v2      = 17,
+    BATTLEGROUND_DS3v3      = 18,
+    BATTLEGROUND_DS5v5      = 19
 };
-#define MAX_BATTLEGROUND_TYPE_ID 4
+#define MAX_BATTLEGROUND_TYPE_ID 20
 
 inline BattleGroundTypeId GetBattleGroundTypeIdByMapId(uint32 mapId)
 {
@@ -1510,6 +1557,22 @@ inline BattleGroundTypeId GetBattleGroundTypeIdByMapId(uint32 mapId)
         case 30:    return BATTLEGROUND_AV;
         case 489:   return BATTLEGROUND_WS;
         case 529:   return BATTLEGROUND_AB;
+        case 556:   return BATTLEGROUND_NA1v1;
+        case 557:   return BATTLEGROUND_NA2v2;
+        case 558:   return BATTLEGROUND_NA3v3;
+        case 559:   return BATTLEGROUND_NA5v5;
+        case 560:   return BATTLEGROUND_BE1v1;
+        case 561:   return BATTLEGROUND_BE2v2;
+        case 562:   return BATTLEGROUND_BE3v3;
+        case 563:   return BATTLEGROUND_BE5v5;
+        case 570:   return BATTLEGROUND_RL1v1;
+        case 571:   return BATTLEGROUND_RL2v2;
+        case 572:   return BATTLEGROUND_RL3v3;
+        case 573:   return BATTLEGROUND_RL5v5;
+        case 617:   return BATTLEGROUND_DS1v1;
+        case 618:   return BATTLEGROUND_DS2v2;
+        case 619:   return BATTLEGROUND_DS3v3;
+        case 620:   return BATTLEGROUND_DS5v5;
         default:    return BATTLEGROUND_TYPE_NONE;
     }
 }
@@ -1518,10 +1581,46 @@ inline uint32 GetBattleGrounMapIdByTypeId(BattleGroundTypeId bgTypeId)
 {
     switch(bgTypeId)
     {
-        case BATTLEGROUND_AV:   return 30;
-        case BATTLEGROUND_WS:   return 489;
-        case BATTLEGROUND_AB:   return 529;
-        default:                return 0;   //none
+        case BATTLEGROUND_AV:
+            return 30;
+        case BATTLEGROUND_WS:
+            return 489;
+        case BATTLEGROUND_AB:
+            return 529;
+        case BATTLEGROUND_NA1v1:
+            return 556;
+        case BATTLEGROUND_NA2v2:
+            return 557;
+        case BATTLEGROUND_NA3v3:
+            return 558;
+        case BATTLEGROUND_NA5v5:
+            return 559;
+        case BATTLEGROUND_BE1v1:
+            return 560;
+        case BATTLEGROUND_BE2v2:
+            return 561;
+        case BATTLEGROUND_BE3v3:
+            return 562;
+        case BATTLEGROUND_BE5v5:
+            return 563;
+        case BATTLEGROUND_RL1v1:
+            return 570;
+        case BATTLEGROUND_RL2v2:
+            return 571;
+        case BATTLEGROUND_RL3v3:
+            return 572;
+        case BATTLEGROUND_RL5v5:
+            return 573;
+        case BATTLEGROUND_DS1v1:
+            return 617;
+        case BATTLEGROUND_DS2v2:
+            return 618;
+        case BATTLEGROUND_DS3v3:
+            return 619;
+        case BATTLEGROUND_DS5v5:
+            return 620;
+        default:
+            return 0;   //none
     }
 
     // impossible, just make compiler happy

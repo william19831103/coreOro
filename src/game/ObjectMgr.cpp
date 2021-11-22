@@ -11258,3 +11258,218 @@ void ObjectMgr::ApplyPremadeSpecTemplateToPlayer(uint32 entry, Player* pPlayer) 
         }
     }
 }
+
+void ObjectMgr::LoadDisabledArenaSpells()
+{
+	{
+		sLog.outString("Loading player disabled arena spells ...");
+		m_disabledArenaSpellsMap.clear();
+
+		//                                                               0        1
+		std::unique_ptr<QueryResult> result(WorldDatabase.Query("SELECT `entry`, `1v1`, `2v2`, `3v3`, `5v5` FROM `disabled_arena_spells`"));
+
+		if (!result)
+		{
+			BarGoLink bar(1);
+			bar.step();
+
+			sLog.outString(">> Loaded 0 disabled arena spells. DB table `disabled_arena_spells` is empty.");
+			return;
+		}
+
+		BarGoLink bar(result->GetRowCount());
+
+		do
+		{
+			bar.step();
+			auto fields = result->Fetch();
+
+			uint32 entry = fields[0].GetUInt32();
+			uint8 onevsone = fields[1].GetUInt8();
+			uint8 twovstwo = fields[2].GetUInt8();
+			uint8 threevsthree = fields[3].GetUInt8();
+			uint8 fivevsfive = fields[4].GetUInt8();
+
+			DisabledArenaSpellsTemplate& data = m_disabledArenaSpellsMap[entry];
+			data.entry = entry;
+			data.onevsone = onevsone;
+			data.twovstwo = twovstwo;
+			data.threevsthree = threevsthree;
+			data.fivevsfive = fivevsfive;
+
+		} while (result->NextRow());
+
+		sLog.outString(">> Loaded " SIZEFMTD " disabled arena spells", m_disabledArenaSpellsMap.size());
+		sLog.outString();
+	}
+}
+
+void ObjectMgr::LoadGearTemplates()
+{
+    {
+        sLog.outString("Loading Template gear templates ...");
+        m_TemplateGearMap.clear();
+
+        std::unique_ptr<QueryResult> result(CharacterDatabase.Query("SELECT temp_id FROM template_npc_gear GROUP BY temp_id"));
+
+        if (!result)
+        {
+            BarGoLink bar(1);
+            bar.step();
+
+            sLog.outString(">> Loaded 0 premade player templates. DB table `template_npc_gear` is empty.");
+            return;
+        }
+
+        BarGoLink bar(result->GetRowCount());
+
+        do
+        {
+            bar.step();
+            auto fields = result->Fetch();
+
+            uint32 temp_id          = fields[0].GetUInt32();
+
+            TemplateGearTemplate& data = m_TemplateGearMap[temp_id];
+            data.temp_id            = temp_id;
+
+        } while (result->NextRow());
+
+        sLog.outString(">> Loaded " SIZEFMTD " Template gear templates", m_TemplateGearMap.size());
+        sLog.outString();
+    }
+
+    {
+        sLog.outString("Loading Template items ...");
+
+        std::unique_ptr<QueryResult> result(CharacterDatabase.Query("SELECT temp_id, item_entry, item_entry_human, item_entry_orc, item_entry_dwarf, item_entry_troll, item_enchant, randomPropertyId FROM template_npc_gear"));
+
+        if (!result)
+        {
+            BarGoLink bar(1);
+            bar.step();
+
+            sLog.outString(">> Loaded 0 Template items. DB table `template_npc_gear` is empty.");
+            return;
+        }
+
+        BarGoLink bar(result->GetRowCount());
+        uint32 count = 0;
+
+        do
+        {
+            bar.step();
+            auto fields = result->Fetch();
+
+            uint32 temp_id = fields[0].GetUInt32();
+            uint32 item_entry = fields[1].GetUInt32();
+            uint32 item_entry_human = fields[2].GetUInt32();
+            uint32 item_entry_orc = fields[3].GetUInt32();
+            uint32 item_entry_dwarf = fields[4].GetUInt32();
+            uint32 item_entry_troll = fields[5].GetUInt32();
+            uint32 item_enchant = fields[6].GetUInt32();
+            uint32 item_property_Id = fields[7].GetUInt32();
+
+            auto itr = m_TemplateGearMap.find(temp_id);
+            if (itr == m_TemplateGearMap.end())
+            {
+                sLog.outErrorDb("Wrong entry %u in table `template_npc_gear`", temp_id);
+                continue;
+            }
+
+            if (!GetItemPrototype(item_entry))
+                continue;
+            if (item_enchant && !sSpellItemEnchantmentStore.LookupEntry(item_enchant))
+                continue;
+
+            count++;
+            itr->second.items.emplace_back(item_entry, item_entry_human, item_entry_orc, item_entry_dwarf, item_entry_troll, item_enchant, item_property_Id);
+        } while (result->NextRow());
+
+        sLog.outString(">> Loaded %u Template items", count);
+        sLog.outString();
+    }
+
+    {
+        sLog.outString("Loading template spells ...");
+
+        std::unique_ptr<QueryResult> result(CharacterDatabase.Query("SELECT temp_id, talent_id FROM template_npc_talents"));
+
+        if (!result)
+        {
+            BarGoLink bar(1);
+            bar.step();
+
+            sLog.outString(">> Loaded 0 template spells. DB table `template_npc_talents` is empty.");
+            return;
+        }
+
+        BarGoLink bar(result->GetRowCount());
+        uint32 count = 0;
+
+        do
+        {
+            bar.step();
+            auto fields = result->Fetch();
+
+            uint32 temp_id = fields[0].GetUInt32();
+            uint32 spell_id = fields[1].GetUInt32();
+
+            auto itr = m_TemplateGearMap.find(temp_id);
+            if (itr == m_TemplateGearMap.end())
+            {
+                sLog.outErrorDb("Wrong entry %u in table `template_npc_talents`", temp_id);
+                continue;
+            }
+
+            if (!sSpellMgr.GetSpellEntry(spell_id))
+                continue;
+
+            count++;
+            //itr->sec.spells.push_back(spell_id);
+        } while (result->NextRow());
+
+        sLog.outString(">> Loaded %u premade player spells", count);
+        sLog.outString();
+    }
+}
+
+void ObjectMgr::ApplyTemplateGearToPlayer(uint32 temp_id, Player* pPlayer) const
+{
+    auto itr = m_TemplateGearMap.find(temp_id);
+    if (itr == m_TemplateGearMap.end())
+    {
+        sLog.outError("Attempt to apply non-existent premade template to player (%u)", temp_id);
+        return;
+    }
+
+    for (auto item : itr->second.items)
+    {
+        uint32 item_entry = item.item_entry;
+
+        // Looking for if the item has another entry for the opposite Team in player_factionchange_items.
+        for (auto it = factionchange_items.begin(); it != factionchange_items.end(); ++it)
+            if (it->second == item_entry || it->first == item_entry)
+                item_entry = pPlayer->GetTeam() == ALLIANCE ? it->first : it->second;
+        // Looking for race specific Items.
+        if (pPlayer->GetRace() == RACE_HUMAN && item.item_entry_human > 0)
+            item_entry = item.item_entry_human;
+
+        if (pPlayer->GetRace() == RACE_ORC && item.item_entry_orc > 0)
+            item_entry = item.item_entry_orc;
+
+        if (pPlayer->GetRace() == RACE_DWARF && item.item_entry_dwarf > 0)
+            item_entry = item.item_entry_dwarf;
+
+        if (pPlayer->GetRace() == RACE_TROLL && item.item_entry_troll > 0)
+            item_entry = item.item_entry_troll;
+
+        if (ItemPrototype const* pItem = GetItemPrototype(item_entry))
+        {
+            if (pItem->MaxCount)
+                pPlayer->DeleteItemInBag(item_entry);
+            pPlayer->SatisfyItemRequirements(pItem);
+            pPlayer->StoreNewItemInBestSlots(item_entry, 1, item.item_enchant, item.item_property_Id);
+        }
+    }
+}

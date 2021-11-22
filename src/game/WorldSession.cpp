@@ -663,6 +663,14 @@ void WorldSession::LogoutPlayer(bool Save)
 
         sBattleGroundMgr.PlayerLoggedOut(_player);
 
+        //remove all Arena queues.
+        for (uint8 bgTypeId = BATTLEGROUND_NA1v1; bgTypeId <= BATTLEGROUND_DS5v5; ++bgTypeId)
+        {
+            BattleGroundQueue& queue = sBattleGroundMgr.m_BattleGroundQueues[bgTypeId];
+            if (&queue)
+                queue.LeaveQueue(_player, BattleGroundTypeId(bgTypeId));
+        }
+
         ///- Reset the online field in the account table
         // no point resetting online in character table here as Player::SaveToDB() will set it to 1 since player has not been removed from world at this stage
         // No SQL injection as AccountID is uint32

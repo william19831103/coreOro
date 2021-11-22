@@ -1390,6 +1390,9 @@ void GameObject::Use(Unit* user)
             return;
     }
 
+	if (user->GetVisibility() == VISIBILITY_OFF && user->ToPlayer()->InArena())
+		return;
+
     // test only for exist cooldown data (cooldown timer used for door/buttons reset that not have use cooldown)
     if (uint32 cooldown = GetGOInfo()->GetCooldown())
     {
@@ -2204,6 +2207,9 @@ bool GameObject::IsUseRequirementMet() const
 
 bool GameObject::PlayerCanUse(Player* pl)
 {
+	if (pl->GetVisibility() == VISIBILITY_OFF && pl->InArena())
+		return false;
+
     if (pl->IsGameMaster())
         return true;
 

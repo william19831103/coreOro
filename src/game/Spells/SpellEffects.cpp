@@ -20,10 +20,11 @@
  */
 
 #include "Common.h"
-#include "SharedDefines.h"
+#include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "Opcodes.h"
 #include "Log.h"
+#include "UpdateMask.h"
 #include "World.h"
 #include "ObjectMgr.h"
 #include "SpellMgr.h"
@@ -32,18 +33,25 @@
 #include "DynamicObject.h"
 #include "SpellAuras.h"
 #include "Group.h"
+#include "UpdateData.h"
+#include "MapManager.h"
 #include "ObjectAccessor.h"
-#include "Creature.h"
+#include "SharedDefines.h"
 #include "Pet.h"
 #include "GameObject.h"
 #include "GameObjectAI.h"
+#include "GossipDef.h"
+#include "Creature.h"
 #include "Totem.h"
 #include "CreatureAI.h"
 #include "BattleGroundMgr.h"
 #include "BattleGround.h"
 #include "BattleGroundWS.h"
+#include "Language.h"
+#include "SocialMgr.h"
 #include "VMapFactory.h"
 #include "Util.h"
+#include "TemporarySummon.h"
 #include "MoveMapSharedDefines.h"
 #include "GameEventMgr.h"
 #include "InstanceData.h"
@@ -264,7 +272,7 @@ void Spell::EffectResurrectNew(SpellEffectIndex eff_idx)
 
 void Spell::EffectInstaKill(SpellEffectIndex /*eff_idx*/)
 {
-    if (!unitTarget)
+    if (!unitTarget || !unitTarget->IsAlive())
         return;
 
     // Demonic Sacrifice
@@ -293,11 +301,6 @@ void Spell::EffectInstaKill(SpellEffectIndex /*eff_idx*/)
 
         m_casterUnit->CastSpell(m_casterUnit, spellId, true);
     }
-
-    // The alive check should be after the Demonic Sacrifice code to allow warlock to get
-    // both shields if he uses it at the same time as Voidwalker's Sacrifice.
-    if (!unitTarget->IsAlive())
-        return;
 
     if (m_caster == unitTarget)                             // prevent interrupt message
         finish();
@@ -1025,6 +1028,167 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     // immediately finishes the cooldown on certain Rogue abilities
                     auto cdCheck = [](SpellEntry const & spellEntry) -> bool { return (spellEntry.SpellFamilyName == SPELLFAMILY_ROGUE && spellEntry.GetRecoveryTime() > 0); };
                     static_cast<Player*>(m_caster)->RemoveSomeCooldown(cdCheck);
+                    return;
+                }
+                case 20476:                                 // UterusOne Jetpack
+                {
+                    Player* pPlayer = m_caster->ToPlayer();
+                    if (!pPlayer)
+                        return;
+
+                    if (pPlayer->IsInCombat())
+                        return;
+
+                    const MapEntry* mapEntry = sMapStorage.LookupEntry<MapEntry>(m_caster->GetMapId());
+                    if (!mapEntry)
+                        return;
+
+                    if (!mapEntry->IsMountAllowed())
+                        return;
+
+                    if (pPlayer->InArena())
+                        return;
+
+                    if (!pPlayer || pPlayer->duel)
+                        return;
+                }
+                case 7077:                                 // UterusOne Teleport
+                {
+                    Player* pPlayer = m_caster->ToPlayer();
+                    if (!pPlayer)
+                        return;
+
+                    if (pPlayer->IsInCombat())
+                        return;
+
+                    if (pPlayer->duel)
+                        return;
+
+                    if (pPlayer->InArena())
+                        return;
+
+                    uint64 m_playerGUID = m_caster->GetObjectGuid();
+
+                    if (Player * pPlayer = m_caster->GetMap()->GetPlayer(m_playerGUID))
+                        pPlayer->TeleportTo(1, -11814.1f, -4769.13f, 6.25296f, 3.7204f);
+
+                    return;
+                }
+                case 7791:                                 // UterusOne Duel Arena Teleport
+                {
+                    Player* pPlayer = m_caster->ToPlayer();
+                    if (!pPlayer)
+                        return;
+
+                    if (pPlayer->IsInCombat())
+                        return;
+
+                    if (pPlayer->InArena())
+                        return;
+
+                    if (pPlayer->duel)
+                        return;
+
+                    uint64 m_playerGUID = m_caster->GetObjectGuid();
+
+                    if (Player* pPlayer = m_caster->GetMap()->GetPlayer(m_playerGUID))
+                        pPlayer->TeleportTo(0, 1903.0f, 2548.0f, 131.252f, 4.68586f);
+
+                    return;
+                }
+                case 26062:                                 // UterusOne cooldown reseter
+                {
+                    Player* pPlayer = m_caster->ToPlayer();
+                    if (!pPlayer)
+                        return;
+
+                    if (pPlayer->IsInCombat())
+                        return;
+
+                    if (pPlayer->InArena())
+                        return;
+
+                    if (pPlayer->duel)
+                        return;
+
+                    pPlayer->RemoveAllSpellCooldown();
+                    pPlayer->ResetCharges();
+                    pPlayer->CastSpell(pPlayer, 24240, true);
+
+                    return;
+                }
+                case 24173:                                 // UterusOne AoE Rezz
+                {
+                    Player* pPlayer = m_caster->ToPlayer();
+                    if (!pPlayer)
+                        return;
+
+                    if (pPlayer->InBattleGround())
+                        return;
+
+                    if (pPlayer->InArena())
+                        return;
+
+                    if (!pPlayer->GetGroup())
+                        return;
+
+                    if (pPlayer->duel)
+                        return;
+
+                    if (Player* pPlayerTarget = ToPlayer(unitTarget))
+                    {
+                        if (Group* pGroup = pPlayerTarget->GetGroup())
+                        {
+                            for (GroupReference* itr = pGroup->GetFirstMember(); itr != nullptr; itr = itr->next())
+                            {
+                                Player* pGroupMember = itr->getSource();
+                                if (pGroupMember && pGroupMember->IsWithinDistInMap(pPlayer, 100.0f))
+                                {
+                                    if (!pGroupMember->IsAlive() && !pGroupMember->InBattleGround() && !pGroupMember->InArena())
+                                    {
+                                        pGroupMember->NearTeleportTo(pPlayer->GetPosition(), false);
+                                        pGroupMember->ResurrectPlayer(100.0f);
+                                        pGroupMember->CastSpell(pGroupMember, 25100, false);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return;
+                }
+                case 5001:                                 // UterusOne Raid teleport
+                {
+                    Player* pPlayer = m_caster->ToPlayer();
+                    if (!pPlayer)
+                        return;
+
+                    if (pPlayer->InBattleGround())
+                        return;
+
+                    if (pPlayer->InArena())
+                        return;
+
+                    if (!pPlayer->GetGroup())
+                        return;
+
+                    if (pPlayer->duel)
+                        return;
+
+                    if (Player* pPlayerTarget = ToPlayer(unitTarget))
+                    {
+                        if (Group* pGroup = pPlayerTarget->GetGroup())
+                        {
+                            for (GroupReference* itr = pGroup->GetFirstMember(); itr != nullptr; itr = itr->next())
+                            {
+                                Player* pGroupMember = itr->getSource();
+                                if (pGroupMember && pGroupMember->IsInWorld() && pGroupMember->IsAlive() && !pGroupMember->InBattleGround() && !pGroupMember->InArena())
+                                {
+                                    pGroupMember->CastSpell(pGroupMember, 16807, false);
+                                    pGroupMember->TeleportTo(pPlayer->GetMapId(), pPlayer->GetPositionX(), pPlayer->GetPositionY(), pPlayer->GetPositionZ(), pPlayer->GetOrientation());
+                                }
+                            }
+                        }
+                    }
                     return;
                 }
                 case 15998:                                 // Capture Worg Pup

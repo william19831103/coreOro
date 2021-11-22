@@ -287,6 +287,8 @@ void ChargeMovementGenerator<T>::ComputePath(T& attacker, Unit& victim)
     path.calculate(victimPos.x, victimPos.y, victimPos.z, false);
 
     // Improved path to victim future estimated position
+    //Player* victimPlayer = victim.ToPlayer();
+    //if (victimPlayer && !victimPlayer->InDalaranArena()) // Disable this feature in Dalaran arena.
     if (Player* victimPlayer = victim.ToPlayer())
     {
         if (sWorld.getConfig(CONFIG_BOOL_ENABLE_MOVEMENT_EXTRAPOLATION_CHARGE) && 

@@ -36,6 +36,8 @@
 // please DO NOT use iterator++, because it is slower than ++iterator!!!
 // post-incrementation is always slower than pre-incrementation !
 
+#define COOL_VISUAL_SPELL_1     14867
+
 // void called when player click on auctioneer npc
 void WorldSession::HandleAuctionHelloOpcode(WorldPacket& recv_data)
 {
@@ -448,6 +450,62 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
     {
         // item not found; auction may have expired, or been bought out
         SendAuctionCommandResult(nullptr, AUCTION_BID_PLACED, AUCTION_ERR_ITEM_NOT_FOUND);
+
+        return;
+    }
+
+    if (auction->owner == 0)
+    {
+        if (!pl)
+            return;
+
+        Item* pItem = sAuctionMgr.GetAItem(auction->itemGuidLow);
+
+        if (!pItem)
+            return;
+
+        ItemPrototype const* item_proto = ObjectMgr::GetItemPrototype(pItem->GetEntry());
+        ItemPrototype const* new_item_proto = nullptr;
+
+        if (!item_proto)
+            return;
+
+        // Looking for if the item has another entry for the opposite Team in player_factionchange_items.
+        std::unique_ptr<QueryResult> player_factionchange_items(WorldDatabase.PQuery("SELECT alliance_id, horde_id "
+            "FROM player_factionchange_items WHERE alliance_id = '%u' OR horde_id = '%u';", item_proto->ItemId, item_proto->ItemId));
+
+        if (player_factionchange_items)
+        {
+            Field* fields = player_factionchange_items->Fetch();
+            uint32 alliance_id = fields[0].GetUInt32();
+            uint32 horde_id = fields[1].GetUInt32();
+
+            if (pl->GetTeam() == ALLIANCE && alliance_id)
+                new_item_proto = ObjectMgr::GetItemPrototype(alliance_id);
+            if (pl->GetTeam() == HORDE && horde_id)
+                new_item_proto = ObjectMgr::GetItemPrototype(horde_id);
+        }
+
+        if (new_item_proto)
+            item_proto = new_item_proto;
+
+        // Check if we need some Reputation for the Item and set it to Exalted.
+        if (item_proto->RequiredReputationFaction && item_proto->RequiredReputationRank > 0)
+        {
+            if (ReputationRank(item_proto->RequiredReputationRank) > pl->ToPlayer()->GetReputationRank(item_proto->RequiredReputationFaction))
+                pl->GetReputationMgr().ModifyReputation(sObjectMgr.GetFactionEntry(item_proto->RequiredReputationFaction), 85000);
+        }
+
+        /*
+        if (item_proto->Quality > 4 && pl->GetSession()->GetSecurity() < SEC_GAMEMASTER)
+        {
+            ChatHandler(pl->GetSession()).PSendSysMessage("Item is not allowed.");
+            return;
+        }
+        */
+
+        if (pl->AddItem(item_proto->ItemId, item_proto->GetMaxStackSize()))
+            pl->PlayDirectSound(1200, pl);
 
         return;
     }

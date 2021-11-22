@@ -714,7 +714,8 @@ int32 SpellCaster::DealHeal(Unit* pVictim, uint32 addhealth, SpellEntry const* s
 
     // Script Event HealedBy
     if (pVictim->AI() && pUnit)
-        pVictim->AI()->HealedBy(pUnit, addhealth);
+        // UterusOne: Healing Dummy.
+        pVictim->AI()->HealedBy(pUnit, addhealth, spellProto);
 
     int32 gain = pVictim->ModifyHealth(int32(addhealth));
 
@@ -722,6 +723,18 @@ int32 SpellCaster::DealHeal(Unit* pVictim, uint32 addhealth, SpellEntry const* s
 
     if (IsCreature() && ((Creature*)this)->IsTotem() && ((Totem*)this)->GetTotemType() != TOTEM_STATUE)
         pHealer = pUnit->GetOwner();
+
+    // UterusOne: Arena: healing done: start.
+    if (pHealer)
+    {
+        if (Player* player = pHealer->ToPlayer())
+        {
+            if (BattleGround* bg = player->GetBattleGround())
+                if (bg->GetStatus() == STATUS_IN_PROGRESS)
+                    bg->UpdatePlayerScore(player, SCORE_HEALING_DONE, gain);
+        }
+    }
+    // UterusOne: Arena: healing done: end.
 
     if (IsPlayer() || pVictim->IsPlayer())
         pHealer->SendHealSpellLog(pVictim, spellProto->Id, addhealth, critical);

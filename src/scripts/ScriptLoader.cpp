@@ -17,6 +17,12 @@ void AddSC_zero_scripts();
 void AddSC_ubrs_trash();
 //void AddSC_gmisland();
 //void AddSC_boss_arena_hardog(); // EVENT de TORKIN
+void AddSC_npc_enchanter();
+void AddSC_npc_attack_dummy();
+void AddSC_npc_winter_wondervolt();
+void AddSC_Item_Requester_NPC();
+void AddSC_TemplateNPC();
+void AddSC_player_stash();
 
 // Event
 //void AddSC_event_attack_city();
@@ -262,6 +268,12 @@ void AddScripts()
     AddSC_zero_scripts();
     AddSC_ubrs_trash();
     //AddSC_gmisland();
+    AddSC_npc_enchanter();
+    AddSC_npc_attack_dummy();
+    AddSC_Item_Requester_NPC();
+    AddSC_TemplateNPC();
+    AddSC_player_stash();
+    AddSC_npc_winter_wondervolt();
 
     // Event
     //AddSC_event_attack_city();

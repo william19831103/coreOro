@@ -2559,8 +2559,79 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
 
     uint32 mapId = caster ? caster->GetMapId() : (player ? player->GetMapId() : 0);
 
+    // UterusOne: Arena: Disabled Spells in Arena.
+    if (player && player->InArena())
+    {
+        auto itr = sObjectMgr.GetDisabledArenaSpellsTemplate().find(spellInfo->Id);
+        if (itr != sObjectMgr.GetDisabledArenaSpellsTemplate().end())
+        {
+            std::ostringstream Hspell;
+            std::ostringstream Harea;
+            Hspell << "|cffffffff|Hspell:" << spellInfo->Id << "|h[" << spellInfo->SpellName[0] << "]|h|r";
+            Harea << "|cffffffff|Harea:" << player->GetMap()->GetMapEntry() << "|h[" << player->GetMap()->GetMapName() << "]|h|r";
+            switch (player->GetBattleGroundTypeId())
+            {
+                case BATTLEGROUND_NA1v1:
+                case BATTLEGROUND_BE1v1:
+                case BATTLEGROUND_RL1v1:
+                case BATTLEGROUND_DS1v1:
+                {
+                    if (itr->second.onevsone)
+                    {
+                        ChatHandler(player->GetSession()).PSendSysMessage("%s is not allowed in %s.", Hspell.str().c_str(), Harea.str().c_str());
+                        return SPELL_FAILED_SPELL_UNAVAILABLE;
+                    }
+                    break;
+                }
+                case BATTLEGROUND_NA2v2:
+                case BATTLEGROUND_BE2v2:
+                case BATTLEGROUND_RL2v2:
+                case BATTLEGROUND_DS2v2:
+                {
+                    if (itr->second.twovstwo)
+                    {
+                        ChatHandler(player->GetSession()).PSendSysMessage("%s is not allowed in %s.", Hspell.str().c_str(), Harea.str().c_str());
+                        return SPELL_FAILED_SPELL_UNAVAILABLE;
+                    }
+                    break;
+                }
+                case BATTLEGROUND_NA3v3:
+                case BATTLEGROUND_BE3v3:
+                case BATTLEGROUND_RL3v3:
+                case BATTLEGROUND_DS3v3:
+                {
+                    if (itr->second.threevsthree)
+                    {
+                        ChatHandler(player->GetSession()).PSendSysMessage("%s is not allowed in %s.", Hspell.str().c_str(), Harea.str().c_str());
+                        return SPELL_FAILED_SPELL_UNAVAILABLE;
+                    }
+                    break;
+                }
+                case BATTLEGROUND_NA5v5:
+                case BATTLEGROUND_BE5v5:
+                case BATTLEGROUND_RL5v5:
+                case BATTLEGROUND_DS5v5:
+                {
+                    if (itr->second.fivevsfive)
+                    {
+                        ChatHandler(player->GetSession()).PSendSysMessage("%s is not allowed in %s.", Hspell.str().c_str(), Harea.str().c_str());
+                        return SPELL_FAILED_SPELL_UNAVAILABLE;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     switch (spellInfo->Id)
     {
+        // UterusOne Arena : Consumables not allowed
+        case 7077:  //UterusOne Teleporter
+        case 7791:  //UterusOne Duel Arena Transporter
+        case 20476: //UterusOne Jetpack Explosion
+        case 24173: //UterusOne AoE Rezz
+        case 5001:  //UterusOne Raid Teleport
+            return player && (player->IsInCombat() || player->InBattleGround() || player->InArena()) ? SPELL_FAILED_TARGET_IN_COMBAT : SPELL_CAST_OK;
         // Alterac Valley
         case 22564:                                         // Recall (Alliance)
         case 22563:                                         // Recall (Horde)
@@ -2580,9 +2651,17 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
         case 23335:                                         // Silverwing Flag
             return player && player->GetMapId() == 489 && player->InBattleGround() ? SPELL_CAST_OK : SPELL_FAILED_REQUIRES_AREA;
         case 2584:                                          // Waiting to Resurrect
-        {
             return player && player->InBattleGround() ? SPELL_CAST_OK : SPELL_FAILED_ONLY_BATTLEGROUNDS;
-        }
+        case 32724:                                         // ALLIANCE_GOLD_TEAM
+        case 32725:                                         // ALLIANCE_GREEN_TEAM
+        case 35774:                                         // HORDE_GOLD_TEAM
+        case 35775:                                         // HORDE_GREEN_TEAM
+        case 35776:                                         // Team Red
+        case 35777:                                         // Team Blue
+        case 30000:                                         // Arena Forbidden Gear
+        case 32727:                                         // Arena Preparation
+        case 34709:                                         // Shadow Sight
+            return player && player->InArena() ? SPELL_CAST_OK : SPELL_FAILED_ONLY_BATTLEGROUNDS;
         case 22011:                                         // Spirit Heal Channel
         case 22012:                                         // Spirit Heal
         case 24171:                                         // Resurrection Impact Visual
@@ -2590,7 +2669,8 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
             MapEntry const* mapEntry = sMapStorage.LookupEntry<MapEntry>(mapId);
             if (!mapEntry)
                 return SPELL_FAILED_REQUIRES_AREA;
-            return mapEntry->IsBattleGround() ? SPELL_CAST_OK : SPELL_FAILED_ONLY_BATTLEGROUNDS;
+            //return mapEntry->IsBattleGround() ? SPELL_CAST_OK : SPELL_FAILED_ONLY_BATTLEGROUNDS;
+            return SPELL_CAST_OK;
         }
     }
 

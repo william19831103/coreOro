@@ -40,7 +40,7 @@ struct ScriptedAI : CreatureAI
     void OnCombatStop() override {}
 
     // Called at any heal cast/item used (call non implemented in mangos)
-    void HealedBy(Unit* /*pHealer*/, uint32& /*uiAmountHealed*/) override {}
+    void HealedBy(Unit* /*pHealer*/, uint32& /*uiAmountHealed*/, const SpellEntry*) override {}
 
     // Called at any Damage to any victim (before damage apply)
     void DamageDeal(Unit* /*pDoneTo*/, uint32& /*uiDamage*/) override {}

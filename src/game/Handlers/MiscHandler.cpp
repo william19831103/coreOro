@@ -679,6 +679,10 @@ void WorldSession::HandleReclaimCorpseOpcode(WorldPacket& recv_data)
 {
     DETAIL_LOG("WORLD: Received CMSG_RECLAIM_CORPSE");
 
+    //don't let reclaim corpse in arenas.
+    if (GetPlayer()->InArena())
+        return;
+
     ObjectGuid guid;
     recv_data >> guid;
 

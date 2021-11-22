@@ -85,6 +85,11 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
         return;
     }
 
+    //pets can attack targets if bg doors are closed without this.
+    BattleGround* bg = _player->GetBattleGround();
+    if (bg && bg->GetStatus() != STATUS_IN_PROGRESS)
+        return;
+
     switch (flag)
     {
         case ACT_COMMAND:                                   // 0x07

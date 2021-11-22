@@ -66,9 +66,10 @@ enum BattleGroundQueueGroupTypes
     BG_QUEUE_PREMADE_ALLIANCE   = 0,
     BG_QUEUE_PREMADE_HORDE      = 1,
     BG_QUEUE_NORMAL_ALLIANCE    = 2,
-    BG_QUEUE_NORMAL_HORDE       = 3
+    BG_QUEUE_NORMAL_HORDE       = 3,
+    BG_QUEUE_MIXED              = 4
 };
-#define BG_QUEUE_GROUP_TYPES_COUNT 4
+#define BG_QUEUE_GROUP_TYPES_COUNT 5
 
 enum BattleGroundGroupJoinStatus
 {
@@ -89,7 +90,12 @@ class BattleGroundQueue
         void FillPlayersToBG(BattleGround* bg, BattleGroundBracketId bracket_id);
         bool CheckPremadeMatch(BattleGroundBracketId bracket_id, uint32 MaxPlayersPerTeam, uint32 MinPlayersPerTeam);
         bool CheckNormalMatch(BattleGroundBracketId bracket_id, uint32 minPlayers, uint32 maxPlayers);
+        bool FillXPlayersToBG(BattleGroundBracketId bracket_id, BattleGround* bg, bool start = false);
+        typedef std::multimap<int32, GroupQueueInfo*> QueuedGroupMap;
+        bool CheckCrossFactionMatch(BattleGroundBracketId bracket_id, BattleGround* bg);
+        bool CheckSkirmishForSameFaction(BattleGroundBracketId bracket_id, uint32 minPlayersPerTeam);
         GroupQueueInfo * AddGroup(Player* leader, Group* group, BattleGroundTypeId bgTypeId, BattleGroundBracketId bracketId, bool isPremade, std::vector<uint32>* excludedMembers = nullptr);
+        void LeaveQueue(Player* player, BattleGroundTypeId ThebgTypeId);
         void RemovePlayer(ObjectGuid guid, bool decreaseInvitedCount);
         void PlayerInvitedToBGUpdateAverageWaitTime(GroupQueueInfo* ginfo, BattleGroundBracketId bracket_id);
         uint32 GetAverageQueueWaitTime(GroupQueueInfo* ginfo, BattleGroundBracketId bracket_id);
@@ -222,6 +228,7 @@ class BattleGroundMgr
         void AddBattleGround(uint32 InstanceID, BattleGroundTypeId bgTypeId, BattleGround* BG) { m_BattleGrounds[bgTypeId][InstanceID] = BG; };
         void RemoveBattleGround(uint32 instanceID, BattleGroundTypeId bgTypeId) { m_BattleGrounds[bgTypeId].erase(instanceID); }
         uint32 CreateClientVisibleInstanceId(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id);
+        static bool IsArena(BattleGroundTypeId bgTypeId);
         void DeleteClientVisibleInstanceId(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id, uint32 clientInstanceID)
         {
             m_ClientBattleGroundIds[bgTypeId][bracket_id].erase(clientInstanceID);

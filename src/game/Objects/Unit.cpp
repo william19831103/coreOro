@@ -723,6 +723,27 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
 
         duel_hasEnded = true;
     }
+
+    // UterusOne: Arena: PlayerScore damage done.
+    // Count damage done from players and his charms (pets, summons) to victim and its charms.
+    if (IsCharmerOrOwnerPlayerOrPlayerItself() && pVictim->IsCharmerOrOwnerPlayerOrPlayerItself() && pVictim != this && pVictim->InArena() && InArena())
+    {
+        if (Player* pDealer = GetCharmerOrOwnerPlayerOrPlayerItself()) // Only Players and their charms are valid victims.
+        {
+            if (BattleGround* bg = pDealer->GetBattleGround())
+            {
+                if (bg->GetStatus() == STATUS_IN_PROGRESS) // Only count if BG is running.
+                {
+                    uint32 dmg = damage;
+                    if (health <= damage) // Don't count more damage than victims Health
+                        dmg = health;
+
+                    bg->UpdatePlayerScore(pDealer, SCORE_DAMAGE_DONE, dmg);
+                }
+            }
+        }
+    }
+
     //Get in CombatState
     if ((pVictim != this) && (damagetype != DOT || (spellProto && spellProto->HasEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA))) &&
        (!spellProto || !spellProto->HasAura(SPELL_AURA_DAMAGE_SHIELD)))
@@ -4033,6 +4054,80 @@ void Unit::RemoveAllAurasOnDeath()
         }
         else
             ++iter;
+    }
+}
+
+void Unit::RemoveAllAurasOnDeathByCaster()
+{
+    // used just after dieing to remove all visible auras
+    // and disable the mods for the passive ones
+    for (SpellAuraHolderMap::iterator iter = m_spellAuraHolders.begin(); iter != m_spellAuraHolders.end();)
+    {
+        // get all auras with max duration under 2 minutes
+        if (!iter->second->IsPassive() && !iter->second->IsDeathPersistent() && iter->second->GetAuraMaxDuration() < 120000 && iter->second->GetAuraDuration() > 0 && iter->second->GetCasterGuid() == GetObjectGuid())
+        {
+            RemoveSpellAuraHolder(iter->second, AURA_REMOVE_BY_DEATH);
+            iter = m_spellAuraHolders.begin();
+        }
+        else
+            ++iter;
+    }
+}
+
+void Unit::RemoveAllAurasFrom(ObjectGuid casterGuid)
+{
+    // used just after dieing to remove all visible auras
+    // and disable the mods for the passive ones
+    for (SpellAuraHolderMap::iterator iter = m_spellAuraHolders.begin(); iter != m_spellAuraHolders.end();)
+    {
+        // get all auras with max duration under 2 minutes
+        if (iter->second->GetCasterGuid() == casterGuid)
+        {
+            RemoveSpellAuraHolder(iter->second, AURA_REMOVE_BY_DEFAULT);
+            iter = m_spellAuraHolders.begin();
+        }
+        else
+            ++iter;
+    }
+}
+
+void Unit::RemoveAllSpellCooldown()
+{
+    if (!m_cooldownMap.IsEmpty())
+    {
+        if (Player* pPlayer = GetAffectingPlayer())
+            pPlayer->SendClearAllCooldowns(this);
+
+        m_cooldownMap.clear();
+    }
+}
+
+void Unit::RemoveAllAurasWithLessThan30SecondsLeft()
+{
+    if (!m_cooldownMap.IsEmpty())
+    {
+        if (Player* pPlayer = GetAffectingPlayer())
+        {
+            Player::SpellAuraHolderMap const& auraHolders = pPlayer->GetSpellAuraHolderMap();
+
+            if (auraHolders.empty())
+                return;
+
+            //Remove auras with duration lower than 30s
+            for (Player::SpellAuraHolderMap::const_iterator itre = auraHolders.begin(); itre != auraHolders.end();)
+            {
+                if (!itre->second->IsPassive() && !itre->second->IsPermanent() && itre->second->GetAuraByEffectIndex(SpellEffectIndex(SPELL_AURA_MOD_INVISIBILITY)) && itre->second->IsPositive() && !itre->second->IsDeathPersistent() && itre->second->GetAuraMaxDuration() <= 30 * IN_MILLISECONDS)
+                {
+                    if (itre->second->GetCasterGuid() != pPlayer->GetObjectGuid())
+                        return;
+
+                    pPlayer->RemoveSpellAuraHolder(itre->second, AURA_REMOVE_BY_DEATH);
+                    itre = auraHolders.begin();
+                }
+                else
+                    ++itre;
+            }
+        }
     }
 }
 
@@ -9308,6 +9403,23 @@ void Unit::KnockBackFrom(WorldObject* target, float horizontalSpeed, float verti
         return;
 
     float angle = this == target ? GetOrientation() + M_PI_F : target->GetAngle(this);
+
+    // set immune anticheat and calculate speed
+    if (Player* plr = ToPlayer())
+    {
+        plr->SetLaunched(true);
+        plr->SetXYSpeed(horizontalSpeed);
+    }
+
+    KnockBack(angle, horizontalSpeed, verticalSpeed);
+}
+
+void Unit::KnockBackFromTo(WorldObject* kicker, WorldObject* target, float horizontalSpeed, float verticalSpeed)
+{
+    if (IsRooted())
+        return;
+
+    float angle = target == kicker ? GetOrientation() + M_PI_F : kicker->GetAngle(target);
 
     // set immune anticheat and calculate speed
     if (Player* plr = ToPlayer())

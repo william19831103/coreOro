@@ -4241,7 +4241,7 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
         switch (GetId())
         {
             case 23620:                                     // Burning Adrenaline
-                if (m_removeMode == AURA_REMOVE_BY_DEATH)
+                if (m_removeMode == AURA_REMOVE_BY_DEATH && target->GetMap()->IsRaid()) //UterusOne dummyfix, to not kill people.
                     target->CastSpell(target, 23478, true);
                 return;
                 /*
@@ -5998,10 +5998,14 @@ void Aura::PeriodicTick(SpellEntry const* sProto, AuraType auraType, uint32 data
             DETAIL_FILTER_LOG(LOG_FILTER_PERIODIC_AFFECTS, "PeriodicTick: %s heal of %s for %u health inflicted by %u",
                               GetCasterGuid().GetString().c_str(), target->GetGuidStr().c_str(), pdamage, GetId());
 
-            int32 gain = target->ModifyHealth(pdamage);
+            uint32 gain = target->ModifyHealth(pdamage);
             SpellPeriodicAuraLogInfo pInfo(this, pdamage, 0, 0, 0.0f);
             target->SendPeriodicAuraLog(&pInfo);
 
+			// UterusOne Script Event HealedBy
+			if (target->AI())
+				target->AI()->HealedBy(pCaster, gain, spellProto);
+			// UterusOne end
             // Set trigger flag
             uint32 procAttacker = PROC_FLAG_DEAL_HARMFUL_PERIODIC;
             uint32 procVictim   = PROC_FLAG_TAKE_HARMFUL_PERIODIC;

@@ -36,6 +36,7 @@
 #include "Formulas.h"
 #include "GridNotifiersImpl.h"
 #include "Chat.h"
+#include "Arena.h"
 
 namespace MaNGOS
 {
@@ -176,6 +177,7 @@ BattleGround::BattleGround()
     m_Winner            = WINNER_NONE;
     m_StartTime         = 0;
     m_Events            = 0;
+    m_PlayersReady      = false;
     m_BuffChange        = false;
     m_Name              = "";
     m_LevelMin          = 0;
@@ -213,6 +215,9 @@ BattleGround::BattleGround()
 
     m_PrematureCountDown = false;
     m_PrematureCountDownTimer = 0;
+
+    m_TenSecondsCountDown = false;
+    m_TenSecondsCountDownTimer = 0;
 
     m_StartDelayTime = 0;
     m_StartDelayTimes[BG_STARTING_EVENT_FIRST]  = BG_START_DELAY_2M;
@@ -327,11 +332,49 @@ void BattleGround::Update(uint32 diff)
     /***           BATTLEGROUND STARTING SYSTEM            ***/
     /*********************************************************/
 
+    // UterusOne 10sec Battle starting timer   
+    // BG_STARTING_EVENT_THIRD = 30 seconds (BG_STARTING_EVENT_THIRD - 19 seconds = start timer at 11 seconds left
+    if (IsArena())
+    {
+        if (GetStartDelayTime() <= (m_StartDelayTimes[BG_STARTING_EVENT_THIRD] - (19 * IN_MILLISECONDS)) && GetStatus() == STATUS_WAIT_JOIN)
+        {
+            if (!m_TenSecondsCountDown)
+            {
+                m_TenSecondsCountDown = true;
+                m_TenSecondsCountDownTimer = GetStartDelayTime();
+            }
+            else if (m_TenSecondsCountDownTimer < diff)
+                m_TenSecondsCountDown = false;
+            else if (GetStatus() != STATUS_IN_PROGRESS)
+            {
+                uint32 newtime = m_TenSecondsCountDownTimer - diff;
+                if (newtime / IN_MILLISECONDS != m_TenSecondsCountDownTimer / IN_MILLISECONDS)
+                {
+                    PlaySoundToAll(UI_BATTLEGROUNDCOUNTDOWN_TIMER);
+                    PSendMessageToAll(ARENA_START_COUNTDOWN, CHAT_MSG_BG_SYSTEM_NEUTRAL, nullptr, (uint32)(m_TenSecondsCountDownTimer / IN_MILLISECONDS));
+                }
+                if (!m_PlayersReady)
+                    m_PlayersReady = true;
+                m_TenSecondsCountDownTimer = newtime;
+            }
+
+        }
+        else if (m_TenSecondsCountDown)
+            m_TenSecondsCountDown = false;
+    }
+    //UterusOne 10sec Battle starting timer end
+
     if (GetStatus() == STATUS_WAIT_JOIN && GetPlayersSize())
     {
         ModifyStartDelayTime(diff);
 
-        if (!(m_Events & BG_STARTING_EVENT_1))
+        // UterusOne: Arena: Arena Watcher NPC.
+        if (AllPlayersReady() && !m_PlayersReady)
+        {
+            m_PlayersReady = true;
+            SetStartDelayTime(m_StartDelayTimes[BG_STARTING_EVENT_FOURTH] + (10 * IN_MILLISECONDS));
+        }
+        else if (!(m_Events & BG_STARTING_EVENT_1))
         {
             m_Events |= BG_STARTING_EVENT_1;
 
@@ -343,19 +386,29 @@ void BattleGround::Update(uint32 diff)
             }
 
             StartingEventCloseDoors();
-            SetStartDelayTime(m_StartDelayTimes[BG_STARTING_EVENT_FIRST]);
-            //first start warning - 2 or 1 minute, only if defined
-            if (m_StartMessageIds[BG_STARTING_EVENT_FIRST])
-                SendMessageToAll(m_StartMessageIds[BG_STARTING_EVENT_FIRST], CHAT_MSG_BG_SYSTEM_NEUTRAL);
+            if (!IsArena())
+            {
+                SetStartDelayTime(m_StartDelayTimes[BG_STARTING_EVENT_FIRST]);
+                //first start warning - 2 or 1 minute, only if defined
+                if (m_StartMessageIds[BG_STARTING_EVENT_FIRST])
+                    SendMessageToAll(m_StartMessageIds[BG_STARTING_EVENT_FIRST], CHAT_MSG_BG_SYSTEM_NEUTRAL);
+            }
+            else
+            {
+                SetStartDelayTime(m_StartDelayTimes[BG_STARTING_EVENT_SECOND]);
+                //first start warning - 1 minute or 30 seconds, only if defined
+                if (m_StartMessageIds[BG_STARTING_EVENT_FIRST])
+                    SendMessageToAll(m_StartMessageIds[BG_STARTING_EVENT_SECOND], CHAT_MSG_BG_SYSTEM_NEUTRAL);
+            }
         }
         // After 1 minute or 30 seconds, warning is signalled
-        else if (GetStartDelayTime() <= m_StartDelayTimes[BG_STARTING_EVENT_SECOND] && !(m_Events & BG_STARTING_EVENT_2))
+        else if (GetStartDelayTime() <= m_StartDelayTimes[BG_STARTING_EVENT_SECOND] && !(m_Events & BG_STARTING_EVENT_2) && !m_PlayersReady)
         {
             m_Events |= BG_STARTING_EVENT_2;
             SendMessageToAll(m_StartMessageIds[BG_STARTING_EVENT_SECOND], CHAT_MSG_BG_SYSTEM_NEUTRAL);
         }
         // After 30 or 15 seconds, warning is signalled
-        else if (GetStartDelayTime() <= m_StartDelayTimes[BG_STARTING_EVENT_THIRD] && !(m_Events & BG_STARTING_EVENT_3))
+        else if (GetStartDelayTime() <= m_StartDelayTimes[BG_STARTING_EVENT_THIRD] && !(m_Events & BG_STARTING_EVENT_3) && !m_PlayersReady)
         {
             m_Events |= BG_STARTING_EVENT_3;
             SendMessageToAll(m_StartMessageIds[BG_STARTING_EVENT_THIRD], CHAT_MSG_BG_SYSTEM_NEUTRAL);
@@ -373,7 +426,10 @@ void BattleGround::Update(uint32 diff)
             SetStatus(STATUS_IN_PROGRESS);
             SetStartDelayTime(m_StartDelayTimes[BG_STARTING_EVENT_FOURTH]);
 
-            PlaySoundToAll(SOUND_BG_START);
+            if (IsArena())
+                PlaySoundToAll(LFG_REWARDS);
+            else
+                PlaySoundToAll(SOUND_BG_START);
 
             //Announce BG starting
             if (sWorld.getConfig(CONFIG_BOOL_BATTLEGROUND_QUEUE_ANNOUNCER_START))
@@ -412,6 +468,28 @@ void BattleGround::Update(uint32 diff)
 
     //update start time
     m_StartTime += diff;
+}
+
+bool BattleGround::AllPlayersReady()
+{
+    uint32 MaxPlayers = GetMaxPlayers();
+    uint32 counter = 0;
+
+    for (const auto& itr : m_Players)
+    {
+        Player* player = sObjectMgr.GetPlayer(itr.first);
+
+        if (!player)
+            continue;
+
+        if (player->HasAura(SPELL_ALLIANCE_FLAG) || player->HasAura(SPELL_HORDE_FLAG))
+            ++counter;
+    }
+
+    if (counter == MaxPlayers)
+        return true;
+
+    return false;
 }
 
 void BattleGround::SetTeamStartLoc(Team team, float X, float Y, float Z, float O)
@@ -586,7 +664,10 @@ void BattleGround::EndBattleGround(Team winner)
     {
         winmsg_id = LANG_BG_A_WINS;
 
-        PlaySoundToAll(SOUND_ALLIANCE_WINS);                // alliance wins sound
+        if (IsArena())
+            PlaySoundToAll(LFG_DUNGEONREADY);
+        else
+            PlaySoundToAll(SOUND_ALLIANCE_WINS);
 
         SetWinner(WINNER_ALLIANCE);
     }
@@ -594,7 +675,10 @@ void BattleGround::EndBattleGround(Team winner)
     {
         winmsg_id = LANG_BG_H_WINS;
 
-        PlaySoundToAll(SOUND_HORDE_WINS);                   // horde wins sound
+        if (IsArena())
+            PlaySoundToAll(LFG_DUNGEONREADY);
+        else
+            PlaySoundToAll(SOUND_HORDE_WINS);
 
         SetWinner(WINNER_HORDE);
     }
@@ -844,6 +928,9 @@ void BattleGround::RemovePlayerAtLeave(ObjectGuid guid, bool Transport, bool Sen
     }
 
     Player* pPlayer = sObjectMgr.GetPlayer(guid);
+
+    if (pPlayer)
+        pPlayer->SetSpectate(false);
 
     // should remove spirit of redemption
     if (pPlayer && pPlayer->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
@@ -1606,7 +1693,8 @@ void BattleGround::HandleKillPlayer(Player* pVictim, Player* pKiller)
     // - Apres la fin du buff - a ce moment la killer=nullptr
 
     // add +1 kills to group and +1 killing_blows to killer
-    if (pKiller && pVictim->GetFactionTemplateId() != pKiller->GetFactionTemplateId())
+    //if (pKiller && pVictim->GetFactionTemplateId() != pKiller->GetFactionTemplateId())
+    if (pKiller && pVictim->GetBGTeam() != pKiller->GetBGTeam())
     {
         UpdatePlayerScore(pKiller, SCORE_HONORABLE_KILLS, 1);
         UpdatePlayerScore(pKiller, SCORE_KILLING_BLOWS, 1);
@@ -1618,7 +1706,7 @@ void BattleGround::HandleKillPlayer(Player* pVictim, Player* pKiller)
             if (!pPlayer || pPlayer == pKiller)
                 continue;
 
-            if (pPlayer->GetTeam() == pKiller->GetTeam() && pPlayer->IsAtGroupRewardDistance(pVictim))
+            if (pPlayer->GetBGTeam() == pKiller->GetBGTeam() && pPlayer->IsAtGroupRewardDistance(pVictim))
                 UpdatePlayerScore(pPlayer, SCORE_HONORABLE_KILLS, 1);
         }
     }
@@ -1672,7 +1760,7 @@ uint32 BattleGround::GetAlivePlayersCountByTeam(Team team) const
         if (itr.second.PlayerTeam == team)
         {
             Player* pl = sObjectMgr.GetPlayer(itr.first);
-            if (pl && pl->IsAlive())
+            if (pl && (pl->IsAlive() && pl->GetFactionTemplateId() != 35))
                 ++count;
         }
     }

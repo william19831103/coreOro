@@ -1809,7 +1809,7 @@ bool ChatHandler::HandleBGStatusCommand(char *args)
     PSendSysMessage(DO_COLOR(COLOR_INFO, "-- Queues for your bracket"));
     i = 0;
 
-    for (uint8 bgTypeId = BATTLEGROUND_AV; bgTypeId <= BATTLEGROUND_AB; ++bgTypeId)
+    for (uint8 bgTypeId = BATTLEGROUND_AV; bgTypeId <= BATTLEGROUND_DS5v5; ++bgTypeId)
     {
         ++i;
         uiAllianceCount = 0;

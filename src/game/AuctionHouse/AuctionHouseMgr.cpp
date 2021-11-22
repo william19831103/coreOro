@@ -660,7 +660,7 @@ void AuctionHouseObject::Update()
 
         next = itr;
         ++next;
-        if (curTime > (entry->expireTime))
+        if (curTime > (entry->expireTime) && entry->owner != 0)
         {
             ///- Either cancel the auction if there was no bidder
             if (entry->bidder == 0)
@@ -858,7 +858,14 @@ bool AuctionEntry::BuildAuctionInfo(WorldPacket& data) const
     data << uint32(startbid);                               // Auction->startbid (not sure if useful)
     data << uint32(bid ? GetAuctionOutBid() : 0);           // minimal outbid
     data << uint32(buyout);                                 // auction->buyout
-    data << uint32((expireTime - time(nullptr))*IN_MILLISECONDS); // time left
+
+    //UterusOne AHBot
+    if (owner == 0)
+        data << uint32(172800*IN_MILLISECONDS); // UterusOne -> make time appear always the same for owner id 0 to avoid empty lines in AH.
+    else
+        data << uint32((expireTime - time(NULL))*IN_MILLISECONDS); // time left
+    //UterusOne AHBot end.
+
     data << ObjectGuid(HIGHGUID_PLAYER, bidder);            // auction->bidder current
     data << uint32(bid);                                    // current bid
     return true;

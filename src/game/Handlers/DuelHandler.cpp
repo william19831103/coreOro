@@ -51,6 +51,29 @@ void WorldSession::HandleDuelAcceptedOpcode(WorldPacket& recvPacket)
 
     pl->SendDuelCountdown(3000);
     plTarget->SendDuelCountdown(3000);
+
+    //UterusOne Duel
+    if (pl->GetClass() == CLASS_WARLOCK && !pl->HasItemCount(6265, 2)) //sould shard
+        pl->AddItem(6265, 2);
+    if (plTarget->GetClass() == CLASS_WARLOCK && !plTarget->HasItemCount(6265, 2)) //sould shard
+        plTarget->AddItem(6265, 2);
+    pl->RemoveAurasDueToSpell(6767);
+    plTarget->RemoveAurasDueToSpell(6767);
+    pl->RemoveAllSpellCooldown();
+    plTarget->RemoveAllSpellCooldown();
+    pl->SetHealth(pl->GetMaxHealth());
+    plTarget->SetHealth(plTarget->GetMaxHealth());
+    pl->SetPower(POWER_MANA, pl->GetMaxPower(POWER_MANA));
+    plTarget->SetPower(POWER_MANA, plTarget->GetMaxPower(POWER_MANA));
+    pl->SetPower(POWER_ENERGY, pl->GetMaxPower(POWER_ENERGY));
+    plTarget->SetPower(POWER_ENERGY, plTarget->GetMaxPower(POWER_ENERGY));
+    pl->SetPower(POWER_RAGE, 0);
+    plTarget->SetPower(POWER_RAGE, 0);
+    plTarget->RemoveAurasDueToSpell(11196);
+    pl->RemoveAurasDueToSpell(11196); //Remove Recently Bandaged Debuff.
+    pl->RemoveAllAurasOnDeathByCaster();
+    plTarget->RemoveAllAurasOnDeathByCaster();
+    //UterusOne Duel end.
 }
 
 void WorldSession::HandleDuelCancelledOpcode(WorldPacket& recvPacket)

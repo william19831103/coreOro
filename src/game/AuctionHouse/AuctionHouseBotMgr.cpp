@@ -30,6 +30,13 @@ void AuctionHouseBotMgr::Load()
     /*2 - LOAD */
     std::unique_ptr<QueryResult> result(WorldDatabase.Query("SELECT `item`, `stack`, `bid`, `buyout` FROM `auctionhousebot`"));
 
+    uint32 inv_count = 0;
+
+    std::unique_ptr<QueryResult> countrows(WorldDatabase.Query("SELECT COUNT(*) FROM auctionhousebot"));
+
+    if (countrows)
+        inv_count = (*countrows)[0].GetUInt32();
+
     if (!result)
     {
         BarGoLink bar(1);
@@ -70,7 +77,8 @@ void AuctionHouseBotMgr::Load()
     m_config->botguid        = sConfig.GetIntDefault("AHBot.bot.guid", 1123);
     m_config->botaccount     = sConfig.GetIntDefault("AHBot.bot.account", 32377);
     m_config->ahfid          = sConfig.GetIntDefault("AHBot.ah.fid", 120);
-    m_config->itemcount      = sConfig.GetIntDefault("AHBot.itemcount", 2);
+    //m_config->itemcount = sConfig.GetIntDefault("AHBot.itemcount", 2);
+    m_config->itemcount = inv_count;
 
     m_auctionHouseEntry = sAuctionMgr.GetAuctionHouseEntry(m_config->ahfid);
     if (!m_auctionHouseEntry)
@@ -109,11 +117,24 @@ void AuctionHouseBotMgr::Update(bool force /* = false */)
     uint32 items        = m_config->itemcount;
     uint32 entriesCount = m_items.size();
 
+    /*
     while (auctions < items)
     {
-        AuctionHouseBotEntry item = m_items[urand(0, entriesCount - 1)];
+        AuctionHouseBotEntry item = m_items[entriesCount - 1];
+        //AuctionHouseBotEntry item = m_items[urand(0, entriesCount - 1)];
         AddItem(item, auctionHouse);
         auctions++;
+    }
+    */
+
+    if (auctions < 1)
+    {
+        for (uint32 i = 0; i < entriesCount; i++)
+        {
+            AuctionHouseBotEntry item = m_items[i];
+            AddItem(item, auctionHouse);
+            auctions++;
+        }
     }
 }
 
@@ -141,6 +162,9 @@ void AuctionHouseBotMgr::AddItem(AuctionHouseBotEntry e, AuctionHouseObject *auc
     if (randomPropertyId != 0)
         item->SetItemRandomProperties(randomPropertyId);
 
+    uint32 etime = 0;
+
+    /*
     uint32 etime = urand(1, 3);
     switch (etime)
     {
@@ -157,7 +181,17 @@ void AuctionHouseBotMgr::AddItem(AuctionHouseBotEntry e, AuctionHouseObject *auc
             etime = 86400;
             break;
     }
-    item->SetCount(e.stack);
+    */
+
+    ItemPrototype const* item_proto = ObjectMgr::GetItemPrototype(item->GetEntry());
+
+    if (!item_proto)
+    {
+        sLog.outInfo("AHBot::AddItem() : item not exist.");
+        return;
+    }
+
+    item->SetCount(item_proto->GetMaxStackSize());
 
     uint32 dep = sAuctionMgr.GetAuctionDeposit(m_auctionHouseEntry, etime, item);
 

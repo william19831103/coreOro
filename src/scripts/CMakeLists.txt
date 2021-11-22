@@ -5,6 +5,7 @@ set (SCRIPTS_SRCS
     ScriptLoader.h
     custom/custom.h
     custom/npc_j_eevee.h
+	custom/TemplateNPC.h
     eastern_kingdoms/burning_steppes/blackrock_depths/blackrock_depths.h
     eastern_kingdoms/burning_steppes/blackrock_spire/blackrock_spire.h
     eastern_kingdoms/burning_steppes/blackwing_lair/blackwing_lair.h
@@ -45,6 +46,12 @@ set (SCRIPTS_SRCS
     custom/npc_escort.cpp
     custom/zero_creatures.cpp
     custom/npc_j_eevee.cpp
+    custom/TemplateNPC.cpp
+    custom/PlayerStash.cpp
+    custom/Item_Requester_NPC.cpp
+    custom/npc_enchanter.cpp
+    custom/npc_attack_dummy.cpp
+    custom/npc_winter_wondervolt.cpp
     eastern_kingdoms/alterac_mountains/alterac_mountains.cpp
     eastern_kingdoms/arathi_highlands/arathi_highlands.cpp
     eastern_kingdoms/blasted_lands/blasted_lands.cpp

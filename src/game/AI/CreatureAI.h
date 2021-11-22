@@ -94,7 +94,7 @@ class CreatureAI
         virtual void JustReachedHome() {}
 
         // Called at any heal cast/item used (call non implemented)
-        virtual void HealedBy(Unit* /*healer*/, uint32& /*amount_healed*/) {}
+        virtual void HealedBy(Unit* /*healer*/, uint32& /*amount_healed*/, const SpellEntry*) {}
 
         // Called at any Damage to any victim (before damage apply)
         virtual void DamageDeal(Unit* /*done_to*/, uint32& /*damage*/) {}

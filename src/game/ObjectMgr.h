@@ -528,6 +528,18 @@ public:
 
 class PvPMaintenanceMaker;
 
+struct DisabledArenaSpellsTemplate
+{
+    uint32 entry = 0;
+    uint8 onevsone = 0;
+    uint8 twovstwo = 0;
+    uint8 threevsthree = 0;
+    uint8 fivevsfive = 0;
+    std::vector<DisabledArenaSpellsTemplate> spells;
+};
+
+typedef std::unordered_map<uint32, DisabledArenaSpellsTemplate> DisabledArenaSpellsMap;
+
 struct PlayerPremadeItem
 {
     PlayerPremadeItem(uint32 item, uint32 enchant, uint32 team) : itemId(item), enchantId(enchant), requiredTeam(team) {};
@@ -555,6 +567,29 @@ struct PlayerPremadeSpecTemplate
 };
 typedef std::unordered_map<uint32, PlayerPremadeGearTemplate> PlayerPremadeGearMap;
 typedef std::unordered_map<uint32, PlayerPremadeSpecTemplate> PlayerPremadeSpecMap;
+struct TemplateGearItem
+{
+    TemplateGearItem(uint32 item_entry, uint32 item_entry_human, uint32 item_entry_orc, uint32 item_entry_dwarf, uint32 item_entry_troll, uint32 item_enchant, uint32 item_property_Id) : item_entry(item_entry), item_entry_human(item_entry_human), item_entry_orc(item_entry_orc), item_entry_dwarf(item_entry_dwarf), item_entry_troll(item_entry_troll), item_enchant(item_enchant), item_property_Id(item_property_Id) {};
+    uint32 item_entry = 0;
+    uint32 item_entry_human = 0;
+    uint32 item_entry_orc = 0;
+    uint32 item_entry_dwarf = 0;
+    uint32 item_entry_troll = 0;
+    uint32 item_enchant = 0;
+    uint32 item_property_Id = 0;
+};
+struct TemplateGearSpells
+{
+    uint32 temp_id = 0;
+    uint32 spell_id = 0;
+};
+struct TemplateGearTemplate
+{
+    uint32 temp_id          = 0;
+    std::vector<TemplateGearItem> items;
+    std::vector<TemplateGearSpells> spells;
+};
+typedef std::unordered_map<uint32, TemplateGearTemplate> TemplateGearMap;
 
 class ObjectMgr
 {
@@ -1348,11 +1383,17 @@ class ObjectMgr
         void ResetOldMailCounter() { m_OldMailCounter = 0; }
         void IncrementOldMailCounter(uint32 count) { m_OldMailCounter += count; }
 
+        void LoadDisabledArenaSpells();
+        DisabledArenaSpellsMap const& GetDisabledArenaSpellsTemplate() const { return m_disabledArenaSpellsMap; }
+
         void LoadPlayerPremadeTemplates();
         void ApplyPremadeGearTemplateToPlayer(uint32 entry, Player* pPlayer) const;
         void ApplyPremadeSpecTemplateToPlayer(uint32 entry, Player* pPlayer) const;
+        void ApplyTemplateGearToPlayer(uint32 entry, Player* pPlayer) const;
         PlayerPremadeGearMap const& GetPlayerPremadeGearTemplates() const { return m_playerPremadeGearMap; }
         PlayerPremadeSpecMap const& GetPlayerPremadeSpecTemplates() const { return m_playerPremadeSpecMap; }
+        void LoadGearTemplates();
+        TemplateGearMap const& GetTemplateGearTemplates() const { return m_TemplateGearMap; }
 
     protected:
 
@@ -1516,6 +1557,11 @@ class ObjectMgr
 
         PlayerPremadeGearMap m_playerPremadeGearMap;
         PlayerPremadeSpecMap m_playerPremadeSpecMap;
+        
+        DisabledArenaSpellsMap m_disabledArenaSpellsMap;
+
+        TemplateGearMap m_TemplateGearMap;
+
 };
 
 #define sObjectMgr MaNGOS::Singleton<ObjectMgr>::Instance()
