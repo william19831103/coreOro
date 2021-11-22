@@ -1335,9 +1335,9 @@ struct npc_attack_dummy_bossAI : public ScriptedAI
             }
     }
 
-    void SpellHit(Unit* pWho, const SpellEntry* spell) override
+    void SpellHit(SpellCaster* pWho, const SpellEntry* spell) override
     {
-        AddSpellToList(pWho, spell);
+        AddSpellToList(pWho->ToUnit(), spell);
     }
 
     void DamageTaken(Unit* pWho, uint32& uiDamage) override
@@ -1764,13 +1764,13 @@ struct npc_attack_dummyAI : public ScriptedAI
             AddAttackerToList(pWho);
     }
 
-    void SpellHit(Unit* pWho, const SpellEntry* pSpell) override
+    void SpellHit(SpellCaster* pWho, const SpellEntry* pSpell) override
     {
         if (!pWho)
             return;
 
         if (pWho->IsPlayer())
-            AddAttackerToList(pWho);
+            AddAttackerToList(pWho->ToUnit());
 
         if (m_creature->IsWorldBoss() || m_creature->IsElite())
         {
@@ -2160,7 +2160,7 @@ struct npc_heal_dummyAI : public ScriptedAI
             spellname.str().c_str(), uiHeal, GetUnitEHPS(pWho), GetUnitTime(pWho), GetUnitHeal(pWho));
     }
 
-    void SpellHit(Unit * pWho, const SpellEntry * pSpell) override
+    void SpellHit(SpellCaster* pWho, const SpellEntry * pSpell) override
     {
         if (!pWho)
             return;
