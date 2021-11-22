@@ -3098,10 +3098,10 @@ struct npc_training_dummyAI : ScriptedAI
             AddAttackerToList(pWho);
     }
 
-    void SpellHit(Unit* pWho, SpellEntry const* /*pSpell*/) override
+    void SpellHit(SpellCaster* pWho, SpellEntry const* /*pSpell*/) override
     {
-        if (pWho)
-            AddAttackerToList(pWho);
+        if (Unit* pAttacker = ToUnit(pWho))
+            AddAttackerToList(pAttacker);
     }
 
     void UpdateAI(uint32 const diff) override
