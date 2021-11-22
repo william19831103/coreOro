@@ -2976,19 +2976,19 @@ bool GossipSelect_ProfessionNPC(Player* pPlayer, Creature* pCreature, uint32 sen
     case SKILL_FIRST_AID:
         if (pPlayer->HasSkill(SKILL_FIRST_AID) && sender == GOSSIP_SENDER_UNLEARN)
             UnLearnAllRecipesInProfession(pPlayer, SKILL_FIRST_AID);
-        else if (!pPlayer->HasSkill(SKILL_FIRST_AID) && pPlayer->GetFreePrimaryProfessionPoints() > 0 && sender == GOSSIP_SENDER_LEARN)
+        else if (!pPlayer->HasSkill(SKILL_FIRST_AID) && sender == GOSSIP_SENDER_LEARN)
             LearnAllRecipesInProfession(pPlayer, SKILL_FIRST_AID);
         break;
     case SKILL_FISHING:
         if (pPlayer->HasSkill(SKILL_FISHING) && sender == GOSSIP_SENDER_UNLEARN)
             UnLearnAllRecipesInProfession(pPlayer, SKILL_FISHING);
-        else if (!pPlayer->HasSkill(SKILL_FISHING) && pPlayer->GetFreePrimaryProfessionPoints() > 0 && sender == GOSSIP_SENDER_LEARN)
+        else if (!pPlayer->HasSkill(SKILL_FISHING) && sender == GOSSIP_SENDER_LEARN)
             LearnAllRecipesInProfession(pPlayer, SKILL_FISHING);
         break;
     case SKILL_COOKING:
         if (pPlayer->HasSkill(SKILL_COOKING) && sender == GOSSIP_SENDER_UNLEARN)
             UnLearnAllRecipesInProfession(pPlayer, SKILL_COOKING);
-        else if (!pPlayer->HasSkill(SKILL_COOKING) && pPlayer->GetFreePrimaryProfessionPoints() > 0 && sender == GOSSIP_SENDER_LEARN)
+        else if (!pPlayer->HasSkill(SKILL_COOKING) && sender == GOSSIP_SENDER_LEARN)
             LearnAllRecipesInProfession(pPlayer, SKILL_COOKING);
         break;
     }
