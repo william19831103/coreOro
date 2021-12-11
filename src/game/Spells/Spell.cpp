@@ -1637,8 +1637,8 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask)
 
     if (pRealCaster && pRealCaster != unit)
     {
-        // Recheck  UNIT_FLAG_NON_ATTACKABLE for delayed spells
-        if (unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) &&
+        // Recheck  UNIT_FLAG_SPAWNING for delayed spells
+        if (unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SPAWNING) &&
             unit->GetCharmerOrOwnerGuid() != m_caster->GetObjectGuid())
         {
             pRealCaster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_EVADE);
@@ -2559,7 +2559,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 // remove not targetable units if spell has no script targets
                 for (UnitList::iterator itr = targetUnitMap.begin(); itr != targetUnitMap.end();)
                 {
-                    if (!(*itr)->IsTargetable(true, m_caster->IsCharmerOrOwnerPlayerOrPlayerItself(), true, false) || !m_spellInfo->CanTargetAliveState((*itr)->IsAlive()))
+                    if (!(*itr)->IsTargetableBy(m_caster, true, false) || !m_spellInfo->CanTargetAliveState((*itr)->IsAlive()))
                         targetUnitMap.erase(itr++);
                     else
                         ++itr;
@@ -7093,7 +7093,7 @@ SpellCastResult Spell::CheckPetCast(Unit* target)
 
         if (_target)                                         //for target dead/target not valid
         {
-            if (!_target->IsTargetable(true, m_casterUnit->IsCharmerOrOwnerPlayerOrPlayerItself()))
+            if (!_target->IsTargetableBy(m_spellInfo->IsPositiveSpell() ? nullptr : m_casterUnit))
                 return SPELL_FAILED_BAD_TARGETS;            // guessed error
 
             // SPELL_EFFECT_DISPEL -> Positive or negative depending on the target
@@ -8108,7 +8108,7 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
     if (target != m_caster && target->GetCharmerOrOwnerGuid() != m_caster->GetObjectGuid())
     {
         // any unattackable target skipped
-        if (target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
+        if (target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SPAWNING))
             return false;
 
         // unselectable targets skipped in all cases except TARGET_UNIT_SCRIPT_NEAR_CASTER targeting
@@ -8410,7 +8410,6 @@ public:
     SpellTargets i_TargetType;
     SpellCaster* i_originalCaster;
     SpellCaster* i_castingObject;
-    bool i_playerControlled;
     float i_centerX;
     float i_centerY;
 
@@ -8430,7 +8429,6 @@ public:
     {
         if (!i_originalCaster)
             i_originalCaster = i_spell.GetAffectiveCasterObject();
-        i_playerControlled = i_originalCaster  ? i_originalCaster->IsControlledByPlayer() : false;
 
         switch (i_push_type)
         {
@@ -8488,7 +8486,7 @@ public:
             if (i_TargetType != SPELL_TARGETS_ALL)
             {
                 bool const forAttack = i_TargetType == SPELL_TARGETS_HOSTILE || i_TargetType == SPELL_TARGETS_NOT_FRIENDLY || i_TargetType == SPELL_TARGETS_AOE_DAMAGE;
-                if (!unit->IsTargetable(forAttack, i_playerControlled, true, false) || !i_spell.m_spellInfo->CanTargetAliveState(unit->IsAlive()))
+                if (!unit->IsTargetableBy(forAttack ? i_originalCaster : nullptr, true, false) || !i_spell.m_spellInfo->CanTargetAliveState(unit->IsAlive()))
                     continue;
             }
 

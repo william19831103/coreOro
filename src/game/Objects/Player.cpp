@@ -871,16 +871,18 @@ bool Player::Create(uint32 guidlow, std::string const& name, uint8 race, uint8 c
     SetInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX, -1);  // -1 is default value
 #endif
 
-    SetByteValue(PLAYER_BYTES, 0, skin);
-    SetByteValue(PLAYER_BYTES, 1, face);
-    SetByteValue(PLAYER_BYTES, 2, hairStyle);
-    SetByteValue(PLAYER_BYTES, 3, hairColor);
+    SetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_SKIN_ID, skin);
+    SetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_FACE_ID, face);
+    SetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_STYLE_ID, hairStyle);
+    SetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_COLOR_ID, hairColor);
 
-    SetByteValue(PLAYER_BYTES_2, 0, facialHair);
-    SetByteValue(PLAYER_BYTES_2, 3, REST_STATE_NORMAL);
+    SetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_FACIAL_STYLE, facialHair);
+    SetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_UNK1, 0xEE);
+    SetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_REST_STATE, REST_STATE_NORMAL);
 
-    SetUInt16Value(PLAYER_BYTES_3, 0, gender);              // only GENDER_MALE/GENDER_FEMALE (1 bit) allowed, drunk state = 0
-    SetByteValue(PLAYER_BYTES_3, 3, 0);                     // BattlefieldArenaFaction (0 or 1)
+    // only GENDER_MALE/GENDER_FEMALE (1 bit) allowed, drunk state = 0
+    SetUInt16Value(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_GENDER_AND_INEBRIATION, gender);
+    SetByteValue(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_HONOR_RANK, 0);
 
     SetUInt32Value(PLAYER_GUILDID, 0);
     SetUInt32Value(PLAYER_GUILDRANK, 0);
@@ -1194,7 +1196,7 @@ DrunkenState Player::GetDrunkenstateByValue(uint16 value)
 void Player::SetDrunkValue(uint16 newDrunkenValue, uint32 itemId)
 {
     m_drunk = newDrunkenValue;
-    SetUInt16Value(PLAYER_BYTES_3, 0, uint16(GetGender()) | (m_drunk & 0xFFFE));
+    SetUInt16Value(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_GENDER_AND_INEBRIATION, uint16(GetGender()) | (m_drunk & 0xFFFE));
 
     uint32 newDrunkenState = Player::GetDrunkenstateByValue(m_drunk);
 
@@ -1490,13 +1492,13 @@ bool Player::IsCityProtector() { return m_ExtraFlags & PLAYER_EXTRA_CITY_PROTECT
 
 void Player::SetCityTitle()
 {
-    SetByteValue(PLAYER_BYTES_3, 2, GetRace());
+    SetByteValue(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_CITY_PROTECTOR_TITLE, GetRace());
     m_ExtraFlags |= PLAYER_EXTRA_CITY_PROTECTOR;
 }
 
 void Player::RemoveCityTitle()
 {
-    SetByteValue(PLAYER_BYTES_3, 2, 0);
+    SetByteValue(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_CITY_PROTECTOR_TITLE, 0);
     m_ExtraFlags &= ~PLAYER_EXTRA_CITY_PROTECTOR;
 }
 
@@ -3772,7 +3774,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
 
     // cleanup unit flags (will be re-applied if need at aura load).
     RemoveFlag(UNIT_FIELD_FLAGS,
-               UNIT_FLAG_NON_ATTACKABLE   | UNIT_FLAG_DISABLE_MOVE  | UNIT_FLAG_NOT_ATTACKABLE_1 |
+               UNIT_FLAG_SPAWNING   | UNIT_FLAG_DISABLE_MOVE  | UNIT_FLAG_NOT_ATTACKABLE_1 |
                UNIT_FLAG_IMMUNE_TO_PLAYER | UNIT_FLAG_IMMUNE_TO_NPC | UNIT_FLAG_LOOTING          |
                UNIT_FLAG_PET_IN_COMBAT    | UNIT_FLAG_SILENCED      | UNIT_FLAG_PACIFIED         |
                UNIT_FLAG_STUNNED          | UNIT_FLAG_IN_COMBAT     | UNIT_FLAG_DISARMED         |
@@ -5095,7 +5097,7 @@ void Player::KillPlayer()
     //SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_IN_PVP);
 
     SetUInt32Value(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_NONE);
-    ApplyModByteFlag(PLAYER_FIELD_BYTES, 0, PLAYER_FIELD_BYTE_RELEASE_TIMER, !sMapStorage.LookupEntry<MapEntry>(GetMapId())->Instanceable());
+    ApplyModByteFlag(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTES_OFFSET_FLAGS, PLAYER_FIELD_BYTE_RELEASE_TIMER, !sMapStorage.LookupEntry<MapEntry>(GetMapId())->Instanceable());
 
     // 6 minutes until repop at graveyard
     m_deathTimer = CORPSE_REPOP_TIME;
@@ -5122,11 +5124,11 @@ Corpse* Player::CreateCorpse()
         return nullptr;
     }
 
-    uint8 skin       = GetByteValue(PLAYER_BYTES, 0);
-    uint8 face       = GetByteValue(PLAYER_BYTES, 1);
-    uint8 hairstyle  = GetByteValue(PLAYER_BYTES, 2);
-    uint8 haircolor  = GetByteValue(PLAYER_BYTES, 3);
-    uint8 facialhair = GetByteValue(PLAYER_BYTES_2, 0);
+    uint8 skin       = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_SKIN_ID);
+    uint8 face       = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_FACE_ID);
+    uint8 hairstyle  = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_STYLE_ID);
+    uint8 haircolor  = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_COLOR_ID);
+    uint8 facialhair = GetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_FACIAL_STYLE);
 
     corpse->SetByteValue(CORPSE_FIELD_BYTES_1, 1, GetRace());
     corpse->SetByteValue(CORPSE_FIELD_BYTES_1, 2, GetGender());
@@ -15217,16 +15219,18 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
         money = MAX_MONEY_AMOUNT;
     SetMoney(money);
 
-    SetByteValue(PLAYER_BYTES, 0, fields[9].GetUInt8());  // skin
-    SetByteValue(PLAYER_BYTES, 1, fields[10].GetUInt8()); // face
-    SetByteValue(PLAYER_BYTES, 2, fields[11].GetUInt8()); // hair style
-    SetByteValue(PLAYER_BYTES, 3, fields[12].GetUInt8()); // hair color
-    SetByteValue(PLAYER_BYTES_2, 0, fields[13].GetUInt8()); // facial hair
+    SetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_SKIN_ID, fields[9].GetUInt8());
+    SetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_FACE_ID, fields[10].GetUInt8());
+    SetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_STYLE_ID, fields[11].GetUInt8());
+    SetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_COLOR_ID, fields[12].GetUInt8());
+    SetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_FACIAL_STYLE, fields[13].GetUInt8());
+    SetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_UNK1, 0xEE);
     SetBankBagSlotCount(fields[14].GetUInt8());
+    SetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_REST_STATE, REST_STATE_NORMAL);
 
     m_drunk = fields[49].GetUInt16();
 
-    SetUInt16Value(PLAYER_BYTES_3, 0, (m_drunk & 0xFFFE) | gender);
+    SetUInt16Value(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_GENDER_AND_INEBRIATION, (m_drunk & 0xFFFE) | gender);
 
     SetUInt32Value(PLAYER_FLAGS, fields[15].GetUInt32());
 
@@ -15243,7 +15247,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
     SetUInt32Value(PLAYER_AMMO_ID, fields[58].GetUInt32());
 
     // Action bars state
-    SetByteValue(PLAYER_FIELD_BYTES, 2, fields[59].GetUInt8());
+    SetByteValue(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTES_OFFSET_ACTION_BARS, fields[59].GetUInt8());
 
     // cleanup inventory related item value fields (its will be filled correctly in _LoadInventory)
     for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
@@ -15975,7 +15979,7 @@ void Player::LoadCorpse()
     else
     {
         if (Corpse* corpse = GetCorpse())
-            ApplyModByteFlag(PLAYER_FIELD_BYTES, 0, PLAYER_FIELD_BYTE_RELEASE_TIMER, corpse && !sMapStorage.LookupEntry<MapEntry>(corpse->GetMapId())->Instanceable());
+            ApplyModByteFlag(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTES_OFFSET_FLAGS, PLAYER_FIELD_BYTE_RELEASE_TIMER, corpse && !sMapStorage.LookupEntry<MapEntry>(corpse->GetMapId())->Instanceable());
         else
         {
             //Prevent Dead Player login without corpse
@@ -16936,12 +16940,12 @@ void Player::SaveToDB(bool online, bool force)
     uberInsert.addUInt32(GetLevel());
     uberInsert.addUInt32(GetUInt32Value(PLAYER_XP));
     uberInsert.addUInt32(GetMoney());
-    uberInsert.addUInt8(GetByteValue(PLAYER_BYTES, 0));     // skin
-    uberInsert.addUInt8(GetByteValue(PLAYER_BYTES, 1));     // face
-    uberInsert.addUInt8(GetByteValue(PLAYER_BYTES, 2));     // hair style
-    uberInsert.addUInt8(GetByteValue(PLAYER_BYTES, 3));     // hair color
-    uberInsert.addUInt32(GetByteValue(PLAYER_BYTES_2, 0));  // facial hair
-    uberInsert.addUInt32(GetByteValue(PLAYER_BYTES_2, 2));  // bank bag slots
+    uberInsert.addUInt8(GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_SKIN_ID));
+    uberInsert.addUInt8(GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_FACE_ID));
+    uberInsert.addUInt8(GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_STYLE_ID));
+    uberInsert.addUInt8(GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_COLOR_ID));
+    uberInsert.addUInt32(GetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_FACIAL_STYLE));
+    uberInsert.addUInt32(GetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_BANK_BAG_SLOTS));
 
     // Nostalrius: Fix toggled PvP flag after relog.
     uint32 playerFlags = GetUInt32Value(PLAYER_FLAGS) & ~(PLAYER_FLAGS_PVP_DESIRED);
@@ -17050,7 +17054,7 @@ void Player::SaveToDB(bool online, bool force)
 
     uberInsert.addUInt32(GetUInt32Value(PLAYER_AMMO_ID));
 
-    uberInsert.addUInt32(uint32(GetByteValue(PLAYER_FIELD_BYTES, 2)));
+    uberInsert.addUInt32(uint32(GetByteValue(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTES_OFFSET_ACTION_BARS)));
     uberInsert.addUInt32(GetWorldMask());
     uberInsert.addUInt64(uint64(m_createTime));
     uberInsert.Execute();
@@ -18243,9 +18247,9 @@ void Player::SetRestBonus(float rest_bonus_new)
 
     // update data for client
     if (m_restBonus > 10)
-        SetByteValue(PLAYER_BYTES_2, 3, REST_STATE_RESTED);
+        SetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_REST_STATE, REST_STATE_RESTED);
     else if (m_restBonus <= 1)
-        SetByteValue(PLAYER_BYTES_2, 3, REST_STATE_NORMAL);
+        SetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_REST_STATE, REST_STATE_NORMAL);
 
     // RestTickUpdate
     SetUInt32Value(PLAYER_REST_STATE_EXPERIENCE, uint32(m_restBonus));
@@ -19336,7 +19340,7 @@ void Player::SetComboPoints()
     if (combotarget)
     {
         SetGuidValue(PLAYER_FIELD_COMBO_TARGET, combotarget->GetObjectGuid());
-        SetByteValue(PLAYER_FIELD_BYTES, 1, m_comboPoints);
+        SetByteValue(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTES_OFFSET_COMBO_POINTS, m_comboPoints);
     }
     /*else
     {
@@ -19904,8 +19908,7 @@ void Player::UpdateForQuestWorldObjects()
                 if (!obj->IsTransport())
                 {
                     if (m_visibleGobjQuestActivated[obj->GetObjectGuid()] != obj->ActivateToQuest(this))
-                        obj->BuildValuesUpdateBlockForPlayerWithFlags(updateData, this, UF_FLAG_DYNAMIC);
-
+                        obj->BuildValuesUpdateBlockForPlayerWithFlags(updateData, this, UF_FLAG_DYNAMIC, true);
                 }
             }
         }

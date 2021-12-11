@@ -700,6 +700,15 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     }
                     return;
                 }
+                case 26471: // Lunar Festival Port Error
+                {
+                    if (!m_caster->IsPlayer())
+                        return;
+
+                    m_caster->RemoveSpellCooldown(26373); // Remove cooldown from Lunar Invititation
+                    SendCastResult(SPELL_FAILED_NOT_HERE);
+                    return;
+                }
                 case 24531: // Refocus : "Instantly clears the cooldowns of Aimed Shot, Multishot, Volley, and Arcane Shot."
                 {
                     if (!m_caster->IsPlayer())
@@ -1577,7 +1586,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                     // Fake death
                     //m_casterUnit->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FEING_DEATH);
-                    m_casterUnit->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                    m_casterUnit->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SPAWNING);
                     m_casterUnit->SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_DEAD);
                     m_casterUnit->AddUnitState(UNIT_STAT_FEIGN_DEATH);
 
@@ -3872,7 +3881,9 @@ void Spell::EffectSpawn(SpellEffectIndex /*eff_idx*/)
     if (!unitTarget || (unitTarget->GetTypeId() != TYPEID_UNIT))
         return;
 
-    unitTarget->SetVisibility(VISIBILITY_ON);
+    if (unitTarget->GetVisibility() != VISIBILITY_ON)
+        unitTarget->SetVisibility(VISIBILITY_ON);
+    unitTarget->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SPAWNING);
 }
 
 void Spell::EffectTradeSkill(SpellEffectIndex /*eff_idx*/)
