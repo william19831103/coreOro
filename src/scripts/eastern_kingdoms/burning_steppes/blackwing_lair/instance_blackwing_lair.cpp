@@ -982,61 +982,16 @@ GameObjectAI* GetAIgo_oeuf_raz(GameObject *pGo)
 
 struct go_engin_suppressionAI: public GameObjectAI
 {
-    go_engin_suppressionAI(GameObject* pGo) : GameObjectAI(pGo), m_uiCheckTimer(urand(6000, 12000)), m_bActive(true) {}
+    go_engin_suppressionAI(GameObject* pGo) : GameObjectAI(pGo), m_uiCheckTimer(urand(6000, 12000)) {}
 
     uint32 m_uiCheckTimer;
-    bool m_bActive;
-
-    bool OnUse(Unit* pUser) override
-    {
-        if (pUser->IsWithinDistInMap(me, 5.0f))
-        {
-            me->SetGoState(GO_STATE_ACTIVE);
-            m_bActive = false;
-            m_uiCheckTimer = urand(4000, 6000);
-            return true;
-        }
-        else
-            return false;
-    }
-
-    void ApplyAura()
-    {
-        me->SendGameObjectCustomAnim();
-        Map::PlayerList const &liste = me->GetMap()->GetPlayers();
-        for (const auto& i : liste)
-        {
-            if (me->GetDistance(i.getSource()) <= 15.0f)
-                if (!i.getSource()->HasStealthAura() && i.getSource()->IsAlive() && !i.getSource()->IsGameMaster())
-                    i.getSource()->AddAura(SPELL_SUPPRESSION_AURA);
-        }
-    }
-
-    void RestoreGo()
-    {
-        if (me->GetInstanceData()->GetData(TYPE_LASHLAYER) == DONE)
-            return;
-
-        me->SetGoState(GO_STATE_READY);
-        m_bActive = true;
-    }
 
     void UpdateAI(uint32 const uiDiff) override
     {
         if (m_uiCheckTimer <= uiDiff)
         {
-            if (m_bActive)
-                ApplyAura();
-            else
-            {
-                if (!urand(0, 4))
-                {
-                    RestoreGo();
-                    m_uiCheckTimer = urand(3000, 4000);
-                    return;
-                }
-            }
-            m_uiCheckTimer = 6000;
+            me->Use(nullptr);
+            m_uiCheckTimer = 5000;
             return;
         }
         m_uiCheckTimer -= uiDiff;

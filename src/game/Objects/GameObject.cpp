@@ -507,13 +507,23 @@ void GameObject::Update(uint32 update_diff, uint32 /*p_time*/)
                     {
                         // environmental damage spells already have around enemies targeting but this not help in case nonexistent GO casting support
 
-                        // affect only players
-                        Player* p_ok = nullptr;
-                        MaNGOS::AnyPlayerInObjectRangeCheck p_check(this, radius);
-                        MaNGOS::PlayerSearcher<MaNGOS::AnyPlayerInObjectRangeCheck>  checker(p_ok, p_check);
-                        Cell::VisitWorldObjects(this, checker, radius);
-                        ok = p_ok;
+                            Creature* p_ok = nullptr;
+                            MaNGOS::AnyCreatureInObjectRangeCheck p_check(this, radius);
+                            MaNGOS::CreatureSearcher<MaNGOS::AnyCreatureInObjectRangeCheck>  checker(p_ok, p_check);
+                            Cell::VisitGridObjects(this, checker, radius); // units
+                            ok = p_ok;
+
+                            /*
+                            // affect only players
+                            Player* p_ok = nullptr;
+                            MaNGOS::AnyPlayerInObjectRangeCheck p_check(this, radius);
+                            MaNGOS::PlayerSearcher<MaNGOS::AnyPlayerInObjectRangeCheck>  checker(p_ok, p_check);
+                            Cell::VisitWorldObjects(this, checker, radius);
+                            ok = p_ok;
+                            */
+
                     }
+
 
                     if (ok && (!AI() || !AI()->OnUse(ok)))
                     {
@@ -2422,6 +2432,7 @@ bool GameObject::HasCustomAnim() const
         case 6785: // plague fissure
         case 6747: // sapphiron birth
         case 6871: // Silithyst bring in
+        case 5874: // Suppression Device
             return true;
     }
 

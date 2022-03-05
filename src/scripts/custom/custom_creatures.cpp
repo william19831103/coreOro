@@ -26,6 +26,8 @@
 #include "World.h"
 #include "Utilities/EventMap.h"
 #include "../world/scourge_invasion.h"
+#include "CreatureGroups.h"
+#include "WaypointManager.h"
 
 enum ArenaGossip
 {
@@ -714,7 +716,7 @@ bool GossipHello_ArenaMaster(Player* pPlayer, GameObject* pGameObject)
     bool SomeoneInQueue_Five_v_Five = false;
 
     const Group* grp = pPlayer->GetGroup();
-    if (!grp) //is not in group. can only join solo queue.
+    if (!grp) // Is not in a group. Can only join solo queue.
     {
         uint8 counter = 0;
         uint8 countQueue;
@@ -780,13 +782,13 @@ bool GossipHello_ArenaMaster(Player* pPlayer, GameObject* pGameObject)
         if (!PlayerIsInQueueFor5v5(pPlayer) && !SomeoneInQueue_Five_v_Five)
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Queue for 5v5 Arena\n\n", 0, GOSSIP_ACTION_5V5_ARENA);
     }
-    else if (grp->GetLeaderGuid() != pPlayer->GetObjectGuid() && !pPlayer->InBattleGroundQueue()) //is in group and not leader. can't do shit.
+    else if (grp->GetLeaderGuid() != pPlayer->GetObjectGuid() && !pPlayer->InBattleGroundQueue()) // Is in a group and not the leader. Can't do shit.
     {
         pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "You are not the Leader of your group. Get Leader or leave the group to queue.", 0, 300);
         pPlayer->SEND_GOSSIP_MENU(DEFAULT, pGameObject->GetObjectGuid());
         return true;
     }
-    else if (grp->GetLeaderGuid() == pPlayer->GetObjectGuid()) //is in group and leader. can only join group queue.
+    else if (grp->GetLeaderGuid() == pPlayer->GetObjectGuid()) // Is in a group and leader. Can only join group queue.
     {
         switch (grp->GetMembersCount())
         {
@@ -805,7 +807,7 @@ bool GossipHello_ArenaMaster(Player* pPlayer, GameObject* pGameObject)
         }
     }
 
-    // search for players in arenas and add a spectator menu.
+    // Search for players in arenas and add a spectator menu.
     uint8 players = 0;
     for (uint8 bgTypeId = BATTLEGROUND_NA1v1; bgTypeId <= BATTLEGROUND_DS5v5; ++bgTypeId)
     {
@@ -1056,7 +1058,7 @@ bool GossipSelect_ArenaMaster(Player* pPlayer, GameObject* pGameObject, uint32 s
 
                 pPlayer->SetHomebindToLocation(loc, area_id);
 
-                // to point to see at pTarget with same orientation
+                // To point to see at pTarget with same orientation
                 float x, y, z;
                 target->GetPosition(x, y, z);
 
@@ -3580,6 +3582,297 @@ bool GossipSelect_BossEitrigg(Player* pPlayer, Creature* pCreature, uint32 sende
     return true;
 }
 
+enum GuardDidier
+{
+    SPELL_MARK_OF_DIDIER = 28114,
+    EVENT_GUARDDIDIER_RESPAWN = 1,
+    EVENT_GUARDDIDIER_MULE_DIED = 2,
+    EVENT_GUARDDIDIER_MARK_OF_DIDIER = 3,
+    EVENT_GUARDDIDIER_SUMMON_MULES = 4,
+    EVENT_GUARDDIDIER_CHAT_MSG_MONSTER_SAY_1 = 5,
+    EVENT_GUARDDIDIER_CHAT_MSG_MONSTER_SAY_2 = 6,
+    EVENT_GUARDDIDIER_START_WAYPOINTS = 7,
+    EVENT_GUARDDIDIER_EMOTE_ORIENTATION = 9,
+    EVENT_GUARDDIDIER_EMOTE_ONESHOTPOINT = 10,
+    EVENT_GUARDDIDIER_CHAT_MSG_MONSTER_SAY_3 = 11,
+    EVENT_GUARDDIDIER_DESPAWN = 12,
+    EVENT_GUARDDIDIER_CHECK_MULE = 13,
+};
+
+struct MuleStruct
+{
+    uint32 m_entry;
+    float m_position[4];
+    float m_distance;
+    float m_angle;
+};
+
+std::array<MuleStruct, 5> const Mules =
+{ {
+    { 16232, {2305.88f, -5290.34f, 82.3359f, 1.8326f}, 5.253697f, 1.606888f },
+    { 16232, {2308.86f, -5290.45f, 82.1197f, 1.79769f}, 5.512784f, 2.234314f },
+    { 16232, {2306.39f, -5294.27f, 82.0796f, 1.81514f}, 5.432998f, 2.864145f },
+    { 16232, {2309.44f, -5294.44f, 82.0796f, 1.72788f}, 5.208000f, 3.490531f },
+    { 16232, {2308.2f, -5297.16f, 82.0796f, 1.78024f}, 5.019997f, 4.118827f },
+} };
+
+void SwitchReactState(Creature* pCreature, bool passiv)
+{
+    if (!pCreature)
+        return;
+
+    if (passiv)
+    {
+        if (pCreature->GetReactState() == REACT_PASSIVE)
+            return;
+
+        pCreature->SetReactState(REACT_PASSIVE);
+        pCreature->RemoveAurasDueToSpell(31309);
+        pCreature->AddAura(31748);
+    }
+    else
+    {
+        if (pCreature->GetReactState() == REACT_DEFENSIVE)
+            return;
+
+        pCreature->SetReactState(REACT_DEFENSIVE);
+        pCreature->RemoveAurasDueToSpell(31748);
+        pCreature->AddAura(31309);
+    }
+
+    pCreature->AddAura(SPELL_MARK_OF_DIDIER);
+};
+
+struct GuardDidierAI : public ScriptedAI
+{
+    EventMap m_events;
+
+    ObjectGuidSet m_caravan_mule;
+    bool escort_failed = false;
+
+    GuardDidierAI(Creature* pCreature) : ScriptedAI(pCreature)
+    {
+        m_events.Reset();
+        SwitchReactState(m_creature, true);
+        m_creature->SetDeathState(JUST_ALIVED);
+        m_creature->SetCorpseDelay(18); // Corpse despawns 18 seconds after death.
+        m_creature->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
+        m_events.ScheduleEvent(EVENT_GUARDDIDIER_CHAT_MSG_MONSTER_SAY_1, 7000);
+        m_creature->RemoveAurasDueToSpell(SPELL_MARK_OF_DIDIER);
+    }
+
+    void Reset() override
+    {
+        SwitchReactState(m_creature, true);
+        // Mark of Didier resets, so we need to apply it again on reset.
+        // Apply only after waypoint 5, or it can be triggered if a player set Argent faction at war.
+        if (m_creature->GetMotionMaster()->getLastReachedWaypoint() >= 5)
+            m_creature->AddAura(SPELL_MARK_OF_DIDIER);
+    }
+
+    void DamageTaken(Unit* pDealer, uint32& /*uiDamage*/) override
+    {
+        m_creature->AI()->OnScriptEventHappened(NULL, NULL, pDealer);
+    }
+
+    void OnScriptEventHappened(uint32 /*uiEvent*/, uint32 /*uiData*/, WorldObject* pInvoker) override
+    {
+        if (m_caravan_mule.empty())
+            return;
+
+        for (const auto& guid : m_caravan_mule)
+        {
+            if (Creature* pMule = m_creature->GetMap()->GetCreature(guid))
+            {
+                SwitchReactState(pMule, false);
+                if (!pMule->SelectHostileTarget() || !pMule->GetVictim())
+                    pMule->AI()->AttackStart(pInvoker->ToCreature());
+            }
+        }
+
+        SwitchReactState(m_creature, false);
+    }
+
+    void MovementInform(uint32 uiMoveType, uint32 uiPointId) override
+    {
+        m_creature->ResetHomePosition();
+    }
+
+    void GroupMemberJustDied(Creature* pCreature, bool /*isLeader*/) override
+    {
+        // Remove dead Caravan Mule.
+        if (m_caravan_mule.find(pCreature->GetObjectGuid()) != m_caravan_mule.end())
+            m_caravan_mule.erase(pCreature->GetObjectGuid());
+    }
+
+    void CorpseRemoved(uint32& /*uiRespawnDelay*/) override
+    {
+        if (sGameEventMgr.IsActiveEvent(9))
+            sGameEventMgr.StopEvent(9);
+    }
+
+    void UpdateAI(uint32 const diff) override
+    {
+        m_events.Update(diff);
+
+        while (uint32 Events = m_events.ExecuteEvent())
+        {
+            switch (Events)
+            {
+                case EVENT_GUARDDIDIER_CHAT_MSG_MONSTER_SAY_1:
+                {
+                    DoScriptText(12105, m_creature, nullptr, CHAT_TYPE_SAY);
+                    m_events.ScheduleEvent(EVENT_GUARDDIDIER_CHAT_MSG_MONSTER_SAY_2, 5000);
+                    break;
+                }
+                case EVENT_GUARDDIDIER_CHAT_MSG_MONSTER_SAY_2:
+                {
+                    DoScriptText(12113, m_creature, nullptr, CHAT_TYPE_SAY);
+                    m_events.ScheduleEvent(EVENT_GUARDDIDIER_EMOTE_ORIENTATION, 4000);
+                    break;
+                }
+                case EVENT_GUARDDIDIER_EMOTE_ORIENTATION:
+                {
+                    m_creature->SetOrientation((float)1.2210f);
+                    m_events.ScheduleEvent(EVENT_GUARDDIDIER_EMOTE_ONESHOTPOINT, 1000);
+                    break;
+                }
+                case EVENT_GUARDDIDIER_EMOTE_ONESHOTPOINT:
+                {
+                    m_creature->HandleEmote(EMOTE_ONESHOT_POINT);
+                    m_events.ScheduleEvent(EVENT_GUARDDIDIER_START_WAYPOINTS, 3000);
+                    break;
+                }
+                case EVENT_GUARDDIDIER_START_WAYPOINTS:
+                {
+                    m_creature->GetMotionMaster()->Clear(false, true);
+                    m_creature->GetMotionMaster()->MoveWaypoint(0, PATH_FROM_SPECIAL, 0, 0, 1622601, false);
+                    m_creature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
+                    m_events.ScheduleEvent(EVENT_GUARDDIDIER_CHECK_MULE, 1000);
+                    std::list<Creature*> muleList;
+                    GetCreatureListWithEntryInGrid(muleList, m_creature, 16232, 50.0f);
+                    for (const auto& pMule : muleList)
+                    {
+                        //pMule->JoinCreatureGroup(m_creature, Mules[count].m_distance, Mules[count].m_angle, OPTION_FORMATION_MOVE | OPTION_AGGRO_TOGETHER);
+                        m_caravan_mule.insert(pMule->GetObjectGuid());
+                    }
+                    break;
+                }
+                case EVENT_GUARDDIDIER_CHECK_MULE:
+                {
+                    if (m_caravan_mule.size() < 5 && !escort_failed)
+                    {
+                        escort_failed = true; // Some Mule died, Escort failed.
+                        m_events.ScheduleEvent(EVENT_GUARDDIDIER_MULE_DIED, 4000);
+                        m_creature->GetMotionMaster()->Initialize();
+                        m_creature->GetMotionMaster()->MoveIdle();
+                        m_creature->StopMoving(true);
+                    }
+                    else
+                        m_events.ScheduleEvent(EVENT_GUARDDIDIER_CHECK_MULE, 1000);
+                    break;
+                }
+                case EVENT_GUARDDIDIER_MULE_DIED:
+                {
+                    m_creature->MonsterSay("EVENT_GUARDDIDIER_MULE_DIED");
+                    if (!m_creature->IsInCombat() && m_creature->IsStopped()) // Waiting until not moving anymore.
+                    {
+                        m_creature->MonsterSay("EMOTE_ONESHOT_BEG");
+                        m_creature->HandleEmote(EMOTE_ONESHOT_BEG);
+                        m_events.ScheduleEvent(EVENT_GUARDDIDIER_CHAT_MSG_MONSTER_SAY_3, 3000);
+                    }
+                    else
+                    {
+                        m_events.ScheduleEvent(EVENT_GUARDDIDIER_MULE_DIED, 1000);
+                    }
+                    break;
+                }
+                case EVENT_GUARDDIDIER_CHAT_MSG_MONSTER_SAY_3:
+                {
+                    m_creature->SetDefaultGossipMenuId(7168);
+                    DoScriptText(12118, m_creature, nullptr, CHAT_TYPE_SAY);
+                    m_creature->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
+                    m_events.ScheduleEvent(EVENT_GUARDDIDIER_DESPAWN, 90000);
+                    break;
+                }
+                case EVENT_GUARDDIDIER_DESPAWN:
+                {
+                    if (sGameEventMgr.IsActiveEvent(9))
+                        sGameEventMgr.StopEvent(9);
+                    break;
+                }
+            }
+        }
+
+        if (!m_creature->SelectHostileTarget() || !m_creature->GetVictim())
+            return;
+
+        DoMeleeAttackIfReady();
+    }
+};
+
+CreatureAI* GetAI_GuardDidierAI(Creature* pCreature)
+{
+    return new GuardDidierAI(pCreature);
+}
+
+struct CaravanMuleAI : public ScriptedAI
+{
+    EventMap m_events;
+
+    std::set<ObjectGuid> m_caravan_mule;
+
+    CaravanMuleAI(Creature* pCreature) : ScriptedAI(pCreature)
+    {
+        m_events.Reset();
+        SwitchReactState(m_creature, true);
+        m_creature->SetDeathState(JUST_ALIVED);
+        m_creature->SetCorpseDelay(5); // Corpse despawns 18 seconds after death.
+        m_creature->RemoveAurasDueToSpell(SPELL_MARK_OF_DIDIER);
+    }
+
+    void Reset() override
+    {
+        SwitchReactState(m_creature, true);
+        // Mark of Didier resets, so we need to apply it again on reset.
+        // Apply only after waypoint 5, or it can be triggered if a player set Argent faction at war.
+        if (Creature* pDidier = m_creature->GetMap()->GetCreature(m_creature->GetCreatureGroup()->GetLeaderGuid()))
+            if (pDidier->GetMotionMaster()->getLastReachedWaypoint() >= 5)
+                m_creature->AddAura(SPELL_MARK_OF_DIDIER);
+    }
+
+    void DamageTaken(Unit* pDealer, uint32& /*uiDamage*/) override
+    {
+        if (Creature* pDidier = m_creature->GetMap()->GetCreature(m_creature->GetCreatureGroup()->GetLeaderGuid()))
+            pDidier->AI()->OnScriptEventHappened(NULL, NULL, pDealer);
+    }
+
+    /*
+    void MoveInLineOfSight(Unit* pWho) override
+    {
+        if (pWho->IsWithinCombatDistInMap(m_creature, ATTACK_DISTANCE) && pWho->GetThreatManager().getThreat(m_creature))
+            m_creature->SetReactState(REACT_DEFENSIVE);
+
+        ScriptedAI::MoveInLineOfSight(pWho);
+    }
+    */
+
+    void UpdateAI(uint32 const diff) override
+    {
+        m_events.Update(diff);
+
+        if (!m_creature->SelectHostileTarget() || !m_creature->GetVictim())
+            return;
+
+        DoMeleeAttackIfReady();
+    }
+};
+
+CreatureAI* GetAI_CaravanMuleAI(Creature* pCreature)
+{
+    return new CaravanMuleAI(pCreature);
+}
+
 void AddSC_custom_creatures()
 {
     Script *newscript;
@@ -3672,6 +3965,16 @@ void AddSC_custom_creatures()
     newscript = new Script;
     newscript->Name = "npc_nagrand_tornado";
     newscript->GetAI = &GetAI_npc_nagrand_tornado;
+    newscript->RegisterSelf(false);
+
+    newscript = new Script;
+    newscript->Name = "npc_guard_didier";
+    newscript->GetAI = &GetAI_GuardDidierAI;
+    newscript->RegisterSelf(false);
+
+    newscript = new Script;
+    newscript->Name = "npc_caravan_mule";
+    newscript->GetAI = &GetAI_CaravanMuleAI;
     newscript->RegisterSelf(false);
 
     newscript = new Script;

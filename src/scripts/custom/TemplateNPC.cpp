@@ -3701,7 +3701,8 @@ struct TemplateNPCAI : public ScriptedAI
 
     void Reset()
     {
-        me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+        me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER);
+        me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
         me->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
         me->AddUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT);
         me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);

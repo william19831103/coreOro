@@ -660,7 +660,8 @@ bool GossipSelect_npc_attack_dummy_boss(Player* pPlayer, Creature* pCreature, ui
             pCreature->SetMaxHealth(TwoMinutesMode);
             if (pCreature && pCreature->AI())
                 pCreature->AI()->JustSummoned(pCreature);
-            //pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+            pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER);
+            pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
             pCreature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
             std::ostringstream ss;
             ss << pPlayer->GetName() << " has chosen a 2 Minute ";
@@ -692,7 +693,8 @@ bool GossipSelect_npc_attack_dummy_boss(Player* pPlayer, Creature* pCreature, ui
             pCreature->SetMaxHealth(FiveMinutesMode);
             if (pCreature && pCreature->AI())
                 pCreature->AI()->JustSummoned(pCreature);
-            //pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+            pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER);
+            pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
             pCreature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
             std::ostringstream ss;
             ss << pPlayer->GetName() << " has chosen a 5 Minute ";
@@ -724,7 +726,8 @@ bool GossipSelect_npc_attack_dummy_boss(Player* pPlayer, Creature* pCreature, ui
             pCreature->SetMaxHealth(OneMinutesMode);
             if (pCreature && pCreature->AI())
                 pCreature->AI()->JustSummoned(pCreature);
-            //pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+            pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER);
+            pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
             pCreature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
             std::ostringstream ss;
             ss << pPlayer->GetName() << " has chosen a 1 Minute ";
@@ -754,7 +757,8 @@ bool GossipSelect_npc_attack_dummy_boss(Player* pPlayer, Creature* pCreature, ui
         case VaelMode:
         {
             pCreature->UpdateEntry(700095);
-            pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+            pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER);
+            pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
             pCreature->SetMaxHealth(VaelMode);
             pCreature->SetHealthPercent(30.0f);
             if (pCreature && pCreature->AI())
@@ -1115,7 +1119,8 @@ struct npc_attack_dummy_bossAI : public ScriptedAI
         m_creature->RemoveAllAurasOnDeath();
         m_bExecute = false;
         m_bEnd = false;
-        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER);
+        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
         m_creature->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
         m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
         dpstimer.clear();
@@ -1478,7 +1483,8 @@ struct npc_attack_dummy_bossAI : public ScriptedAI
                     {
                         m_creature->MonsterTextEmote("%s is attackable and will reset in 10 second if no one attacks!", NULL);
                         m_creature->CastSpell(me, 28136, true);
-                        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER);
+                        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
                         //m_creature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
                         m_creature->PlayDirectSound(BG_WS_SOUND_FLAGS_RESPAWNED, 0);
                         m_events.ScheduleEvent(EVENT_PULL_RESET, 10000);
@@ -2197,7 +2203,8 @@ struct npc_heal_dummyAI : public ScriptedAI
                     uint32 damage = 0;
 
                     if (GetAllEHPS() > 0)
-                        damage = (GetAllEHPS() * 2) / 50 * m_creature->GetHealthPercent();
+                        //damage = (GetAllEHPS() * 2) / 50 * m_creature->GetHealthPercent();
+                        damage = (urand(4000, 7000));
                     else
                         damage = (urand(4000, 7000));
 

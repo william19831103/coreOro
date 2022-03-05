@@ -1280,6 +1280,21 @@ namespace MaNGOS
             bool b_3dDist;
     };
 
+    class AnyCreatureInObjectRangeCheck
+    {
+        public:
+            AnyCreatureInObjectRangeCheck(WorldObject const* obj, float range, bool distance_3d = true) : i_obj(obj), i_range(range), b_3dDist(distance_3d) {}
+            WorldObject const& GetFocusObject() const { return *i_obj; }
+            bool operator()(Creature* u)
+            {
+                return u->IsAlive() && i_obj->IsWithinDistInMap(u, i_range, b_3dDist);
+            }
+        private:
+            WorldObject const* i_obj;
+            float i_range;
+            bool b_3dDist;
+    };
+
     class AnyPlayerInObjectRangeWithAuraCheck
     {
         public:
