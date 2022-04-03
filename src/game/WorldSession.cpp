@@ -257,6 +257,7 @@ bool WorldSession::ForcePlayerLogoutDelay()
         sLog.out(LOG_CHAR, "Account: %d (IP: %s) Lost socket for character:[%s] (guid: %u)", GetAccountId(), GetRemoteAddress().c_str(), _player->GetName() , _player->GetGUIDLow());
         sWorld.LogCharacter(GetPlayer(), "LostSocket");
         GetPlayer()->OnDisconnected();
+        GetPlayer()->SaveToDB();
         SetDisconnectedSession();
         m_disconnectTimer = 120000;
         return true;
@@ -665,6 +666,8 @@ void WorldSession::KickPlayer()
 {
     if (m_socket)
         m_socket->CloseSocket();
+    else if (m_bot)
+        m_bot->requestRemoval = true;
 }
 
 /// Cancel channeling handler

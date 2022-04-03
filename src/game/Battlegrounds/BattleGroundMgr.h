@@ -58,6 +58,7 @@ struct GroupQueueInfo                                       // stores informatio
     uint32  JoinTime;                                       // time when group was added
     uint32  RemoveInviteTime;                               // time when we will remove invite for players in group
     uint32  IsInvitedToBGInstanceGUID;                      // was invited to certain BG
+    uint32  DesiredInstanceId;                              // queued for this instance specifically
     BattleGroundBracketId BracketId;
 };
 
@@ -94,8 +95,8 @@ class BattleGroundQueue
         typedef std::multimap<int32, GroupQueueInfo*> QueuedGroupMap;
         bool CheckCrossFactionMatch(BattleGroundBracketId bracket_id, BattleGround* bg);
         bool CheckSkirmishForSameFaction(BattleGroundBracketId bracket_id, uint32 minPlayersPerTeam);
-        GroupQueueInfo * AddGroup(Player* leader, Group* group, BattleGroundTypeId bgTypeId, BattleGroundBracketId bracketId, bool isPremade, std::vector<uint32>* excludedMembers = nullptr);
         void LeaveQueue(Player* player, BattleGroundTypeId ThebgTypeId);
+        GroupQueueInfo * AddGroup(Player* leader, Group* group, BattleGroundTypeId bgTypeId, BattleGroundBracketId bracketId, bool isPremade, uint32 instanceId, std::vector<uint32>* excludedMembers);
         void RemovePlayer(ObjectGuid guid, bool decreaseInvitedCount);
         void PlayerInvitedToBGUpdateAverageWaitTime(GroupQueueInfo* ginfo, BattleGroundBracketId bracket_id);
         uint32 GetAverageQueueWaitTime(GroupQueueInfo* ginfo, BattleGroundBracketId bracket_id);
@@ -131,7 +132,7 @@ class BattleGroundQueue
         {
         public:
             void Init();
-            bool AddGroup(GroupQueueInfo *ginfo, uint32 desiredCount);
+            bool AddGroup(GroupQueueInfo *ginfo, uint32 desiredCount, uint32 bgInstanceId);
             bool KickGroup(uint32 size);
             uint32 GetPlayerCount() const {return PlayerCount;}
         public:
