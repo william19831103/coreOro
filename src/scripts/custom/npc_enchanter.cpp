@@ -486,8 +486,8 @@ bool GossipSelect_EnchanterNPC(Player* pPlayer, GameObject* pGameObject, uint32 
 
             if (last_count <= 0) // If uiSender was NULL we return to GossipHello_EnchanterNPC.
                 pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "<- Back", NULL, ENCHANTER_MAIN_MENU);
-            else // If not, return to last page (Still need to figure out).
-                pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "<- Back", (last_count - (new_count - last_count)), equipment_slot);
+            //else // If not, return to last page (Still need to figure out).
+                //pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "<- Back", (last_count - (new_count - last_count)), equipment_slot);
 
             /*
             std::ostringstream Hspell;
@@ -658,8 +658,8 @@ bool GossipSelect_PoisoneerNPC(Player* pPlayer, GameObject* pGameObject, uint32 
 
             if (last_count <= 0)
                 pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "<- Back", NULL, ENCHANTER_MAIN_MENU);
-            else
-                pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "<- Back", (last_count - (new_count - last_count)), equipment_slot);
+            //else
+                //pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "<- Back", (last_count - (new_count - last_count)), equipment_slot);
 
             /*
             std::ostringstream Hspell;

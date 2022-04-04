@@ -829,7 +829,7 @@ bool BattleGroundQueue::FillXPlayersToBG(BattleGroundBracketId bracket_id, Battl
 
             bool alliance = (*itr)->GroupTeam == ALLIANCE;
 
-            if (m_SelectionPools[alliance ? TEAM_ALLIANCE : TEAM_HORDE].AddGroup((*itr), alliance ? aliFree : hordeFree))
+            if (m_SelectionPools[alliance ? TEAM_ALLIANCE : TEAM_HORDE].AddGroup((*itr), alliance ? aliFree : hordeFree, 0))
             {
                 uint8 GSize = (*itr)->Players.size();
                 alliance ? valiFree -= GSize : vhordeFree -= GSize;
@@ -870,7 +870,7 @@ bool BattleGroundQueue::CheckSkirmishForSameFaction(BattleGroundBracketId bracke
     for (; itr_team2 != m_QueuedGroups[bracket_id][BG_QUEUE_NORMAL_ALLIANCE + teamIndex].end(); ++itr_team2)
     {
         //if selection pool is full then break;
-        if (!(*itr_team2)->IsInvitedToBGInstanceGUID && !m_SelectionPools[otherTeam].AddGroup(*itr_team2, minPlayersPerTeam))
+        if (!(*itr_team2)->IsInvitedToBGInstanceGUID && !m_SelectionPools[otherTeam].AddGroup(*itr_team2, minPlayersPerTeam , 0))
             break;
     }
 

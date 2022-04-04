@@ -568,7 +568,7 @@ bool JoinQueueArena(Player* pPlayer, GameObject* pGameObject, uint8 bgTypeid)
 
         BattleGroundQueue& bgQueue = sBattleGroundMgr.m_BattleGroundQueues[bgQueueTypeId];
 
-        GroupQueueInfo* ginfo = bgQueue.AddGroup(pPlayer, nullptr, bgTypeID, bracketEntry, false);
+        GroupQueueInfo* ginfo = bgQueue.AddGroup(pPlayer, nullptr, bgTypeID, bracketEntry, false , 0, 0);
         uint32 avgTime = bgQueue.GetAverageQueueWaitTime(ginfo, bracketEntry);
         uint32 queueSlot = pPlayer->AddBattleGroundQueueId(bgQueueTypeId);
         pPlayer->SetBattleGroundEntryPoint(pPlayer, false);
@@ -610,7 +610,7 @@ bool JoinQueueArena(Player* pPlayer, GameObject* pGameObject, uint8 bgTypeid)
 
         BattleGroundQueue& bgQueue = sBattleGroundMgr.m_BattleGroundQueues[bgQueueTypeId];
         DEBUG_LOG("Battleground: the following players are joining as group:");
-        GroupQueueInfo* ginfo = bgQueue.AddGroup(pPlayer, grp, bgTypeID, bracketEntry, isPremade, &excludedMembers);
+        GroupQueueInfo* ginfo = bgQueue.AddGroup(pPlayer, grp, bgTypeID, bracketEntry, isPremade, 0, &excludedMembers);
         uint32 avgTime = bgQueue.GetAverageQueueWaitTime(ginfo, bracketEntry);
         for (GroupReference* itr = grp->GetFirstMember(); itr != NULL; itr = itr->next())
         {

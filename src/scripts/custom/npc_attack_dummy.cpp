@@ -1782,18 +1782,6 @@ struct npc_attack_dummyAI : public ScriptedAI
         {
             switch (pSpell->School)
             {
-                case SPELL_SCHOOL_NORMAL:
-                {
-                    ApplyImprovedDebuffsOnDummy(pWho->ToPlayer(), me, 14325); //Improved Hunter's Mark
-                    ApplyImprovedDebuffsOnDummy(pWho->ToPlayer(), me, 11198); //Improved Expose Armor
-                    ApplyDebuffsOnDummy(me, 11374); //Gift of Arthas
-                    ApplyDebuffsOnDummy(me, 17348); //Hemorrhage
-                    ApplyDebuffsOnDummy(me, 16928); //Armor Shatter - Annihilator
-                    ApplyDebuffsOnDummy(me, 23577); //Expose Weakness
-                    ApplyDebuffsOnDummy(me, 9907); //Faerie Fire
-                    ApplyDebuffsOnDummy(me, 11717); //Curse of Recklessness
-                    break;
-                }
                 case SPELL_SCHOOL_HOLY:
                 {
                     ApplyDebuffsOnDummy(me, 23605); //Spell Vulnerability - Nightfall Axe
@@ -1835,8 +1823,19 @@ struct npc_attack_dummyAI : public ScriptedAI
                     ApplyDebuffsOnDummy(me, 17937); //Curse of Shadow
                     break;
                 }
+                case SPELL_SCHOOL_NORMAL:
                 default:
+                {
+                    ApplyImprovedDebuffsOnDummy(pWho->ToPlayer(), me, 14325); //Improved Hunter's Mark
+                    ApplyImprovedDebuffsOnDummy(pWho->ToPlayer(), me, 11198); //Improved Expose Armor
+                    ApplyDebuffsOnDummy(me, 11374); //Gift of Arthas
+                    ApplyDebuffsOnDummy(me, 17348); //Hemorrhage
+                    ApplyDebuffsOnDummy(me, 16928); //Armor Shatter - Annihilator
+                    ApplyDebuffsOnDummy(me, 23577); //Expose Weakness
+                    ApplyDebuffsOnDummy(me, 9907); //Faerie Fire
+                    ApplyDebuffsOnDummy(me, 11717); //Curse of Recklessness
                     break;
+                }
             }
         }
     }
