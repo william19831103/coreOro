@@ -28,6 +28,9 @@ class GameObjectAI
         // Called when the creature summon is killed
         virtual void SummonedCreatureJustDied(Creature* /*unit*/) {}
 
+        // Called when the creature summon despawns
+        virtual void SummonedCreatureDespawn(Creature* /*unit*/) {}
+
         // Called if a temporary summoned of m_creature reach a move point
         virtual void SummonedMovementInform(Creature* /*summoned*/, uint32 /*motion_type*/, uint32 /*point_id*/) {}
 

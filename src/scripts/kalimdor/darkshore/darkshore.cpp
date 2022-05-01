@@ -29,6 +29,7 @@ npc_chasseur_grisebrume
 EndContentData */
 
 #include "scriptPCH.h"
+#include "WaypointManager.h"
 
 /*####
 # npc_kerlonian
@@ -966,12 +967,12 @@ bool QuestAcceptGO_beached_sea(Player* player, GameObject* pGo, Quest const* pQu
  #npc_murkdeep
  ###*/
 
-enum MurkdeepData
+enum Murkdeep
 {
-    NPC_MURLOC_COATRUNNER = 2202,
-    NPC_MURLOC_WARRIOR    = 2205,
-    NPC_MURLOC_HUNTER     = 2206,
-    NPC_MURKDEEP          = 10323,
+    NPC_GREYMIST_COASTRUNNER = 2202,
+    NPC_GREYMIST_WARRIOR = 2205,
+    NPC_GREYMIST_HUNTER = 2206,
+    NPC_MURKDEEP = 10323,
 
     GO_BONFIRE = 61927,
 
@@ -980,216 +981,172 @@ enum MurkdeepData
     QUEST_WANTED_MURKDEEP = 4740,
 
     SPELL_SUNDER_ARMOR = 11971,
-    SPELL_NET          = 6533
+    SPELL_NET = 6533,
 };
 
-static float const m_fSummonPoints[3][3] =
+struct MurlocStruct
 {
-    { 4984.772f, 596.975f, -1.172f },
-    { 4989.618f, 599.530f, -1.291f },
-    { 4979.620f, 593.845f, -0.881f }
+    uint32 m_npcEntry;
+    int m_wave;
+    float m_summon_position[4];
+    float m_end_position[3];
+    uint32 m_specialWaypoints; // unused.
 };
 
-struct npc_murkdeepAI : public ScriptedAI
+std::array<MurlocStruct, 7> const Murlocs =
+{ {
+    { NPC_GREYMIST_COASTRUNNER, 1, {4992.359863f, 604.164001f, -1.583150f, 4.629250f}, {4985.59f, 548.37f, 5.20154f}, 220201 },
+    { NPC_GREYMIST_COASTRUNNER, 1, {4999.430176f, 613.494995f, -2.640280f, 6.000060f}, {4992.22f, 548.325f, 5.15979f}, 220202 },
+    { NPC_GREYMIST_COASTRUNNER, 1, {5000.450195f, 611.432007f, -2.141540f, 6.108570f}, {4987.93f, 545.078f, 5.31286f}, 220203 },
+    { NPC_GREYMIST_WARRIOR, 2, {4994.259766f, 614.099976f, -3.671960f, 4.425240f}, {4985.59f, 548.37f, 5.20154f}, 220501 },
+    { NPC_GREYMIST_WARRIOR, 2, {4990.520020f, 615.265991f, -4.662100f, 6.088590f}, {4992.22f, 548.325f, 5.15979f}, 220502 },
+    { NPC_GREYMIST_HUNTER, 3, {4991.589844f, 616.317993f, -5.095080f, 4.696760f}, {4985.59f, 548.37f, 5.20154f}, 220601 },
+    { NPC_MURKDEEP, 3, {4993.229980f, 615.023987f, -4.334300f, 4.636230f}, {4987.93f, 545.078f, 5.31286f}, 1032301 },
+} };
+
+struct go_murkdeep_bonfire : public GameObjectAI
 {
-    npc_murkdeepAI(Creature * pCreature) : ScriptedAI(pCreature)
+    // This is the only Bonfire with this entry.
+    explicit go_murkdeep_bonfire(GameObject* gobj) : GameObjectAI(gobj)
     {
-        npc_murkdeepAI::Reset();
-
-        m_creature->SetVisibility(VISIBILITY_OFF);
-        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
     }
 
-    ObjectGuid m_playerGuid;
-    ObjectGuid m_bonfireGuid;
-    bool m_bEventState;
-    uint8 m_uiEventPhase;
-    uint32 m_uiEventTimer;
-    uint32 m_uiSunderArmorTimer;
-    uint32 m_uiNetTimer;
+    std::set<ObjectGuid> m_greymist_murlocs;
 
-    void Reset() override
+    int wave = 1;
+    bool b_wave_active = false;
+    bool b_murkdeep_active = false;
+    bool b_event_done = false; // If Murkdeep is a corpse.
+
+    void SummonedCreatureJustDied(Creature* pSummoned) override
     {
-        m_uiEventPhase = 0;
-        m_bEventState = false;
+        // Only if Murkdeep is not spawned, the next wave spawns instantly after this one is cleaned.
+        if (!b_murkdeep_active && !b_event_done)
+        {
+            if (m_greymist_murlocs.find(pSummoned->GetObjectGuid()) != m_greymist_murlocs.end())
+            {
+                m_greymist_murlocs.erase(pSummoned->GetObjectGuid());
+                sLog.outBasic("[SummonedCreatureJustDied] erase %d.", pSummoned->GetEntry());
+            }
+        }
 
-        m_uiSunderArmorTimer = urand(0, 5);
-        m_uiNetTimer = urand(0, 20);
+        switch (pSummoned->GetEntry())
+        {
+            case NPC_GREYMIST_COASTRUNNER:
+                wave = 2;
+                break;
+            case NPC_GREYMIST_WARRIOR:
+                wave = 3;
+                break;
+            case NPC_GREYMIST_HUNTER: // If the Hunter has been killed from Murkdeeps wave, set back to wave 1, because they can respawn.
+            case NPC_MURKDEEP:
+                wave = 1;
+                break;
+        }
+
+        if (SummoneNextWave())
+            sLog.outBasic("[SummoneNextWave] successful.");
     }
 
-    void BeginEvent(Player *pPlayer)
+    // Not sure if this working.
+    void SummonedCreatureDespawn(Creature* pSummoned) override
     {
-        if (!pPlayer)
+        if (m_greymist_murlocs.find(pSummoned->GetObjectGuid()) != m_greymist_murlocs.end())
+        {
+            m_greymist_murlocs.erase(pSummoned->GetObjectGuid());
+            sLog.outBasic("[SummonedCreatureDespawn] erase %d.", pSummoned->GetEntry());
+        }
+    }
+
+    void SummonedMovementInform(Creature* pSummoned, uint32 uiMotionType, uint32 uiPointId) override
+    {
+        if (uiMotionType != POINT_MOTION_TYPE || !pSummoned)
             return;
 
-        m_uiEventPhase = 1;
-        m_uiEventTimer = 1000;
-        m_bEventState = true;
+        pSummoned->GetMotionMaster()->MoveRandom(true, 5.0f);
 
-        m_playerGuid = pPlayer->GetObjectGuid();
-
-        GameObject* bonfire = GetClosestGameObjectWithEntry(m_creature, GO_BONFIRE, DEFAULT_VISIBILITY_DISTANCE);
-        if (bonfire)
-            m_bonfireGuid = bonfire->GetObjectGuid();
+        sLog.outBasic("[SummonedMovementInform] %d reached point %d.", pSummoned->GetEntry(), uiPointId);
     }
 
-    void JustSummoned(Creature* pWho) override
+    bool SummoneNextWave()
     {
-        Player* player = GetPlayer();
+        b_wave_active = false;
+        b_murkdeep_active = false;
+        b_event_done = false;
 
-        if (player)
+        sLog.outBasic("[SummoneNextWave] m_greymist_murlocs size: %d.", m_greymist_murlocs.size());
+
+        std::list<Creature*> murlocsInCamp;
+        GetCreatureListWithEntryInGrid(murlocsInCamp, me, { NPC_GREYMIST_COASTRUNNER, NPC_GREYMIST_WARRIOR, NPC_GREYMIST_HUNTER, NPC_MURKDEEP }, DEFAULT_VISIBILITY_DISTANCE);
+        for (const auto pMurloc : murlocsInCamp)
         {
-            pWho->AI()->AttackStart(player);
-        }
-        else
-        {
-            pWho->ForcedDespawn();
-            pWho->RemoveCorpse();
-            m_bEventState = false;
-        }
-    }
+            if (!pMurloc)
+                continue;
 
-    Player* GetPlayer() const
-    {
-        Player* player = m_creature->GetMap()->GetPlayer(m_playerGuid);
-        if (!player)
-            return nullptr;
+            sLog.outBasic("[SummoneNextWave] GetCreatureListWithEntryInGrid: %d.", pMurloc->GetEntry());
 
-        GameObject* bonfire = m_creature->GetMap()->GetGameObject(m_bonfireGuid);
-        if (!bonfire)
-            return nullptr;
-
-        if (player->IsInRange(bonfire, 0.0f, 50.0f) && player->IsAlive())
-            return player;
-
-        return nullptr;
-    }
-
-    void DoSummon() const
-    {
-        switch (m_uiEventPhase)
-        {
-            case 1:
-                for (const auto& position : m_fSummonPoints)
-                    m_creature->SummonCreature(NPC_MURLOC_COATRUNNER,
-                        position[0],
-                        position[1],
-                        position[2],
-                        m_creature->GetOrientation(),
-                        TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 10 * MINUTE*IN_MILLISECONDS);
-                break;
-            case 2:
-                for (uint8 i = 0; i < 2; ++i)
-                    m_creature->SummonCreature(NPC_MURLOC_WARRIOR,
-                        m_fSummonPoints[i][0], m_fSummonPoints[i][1],
-                        m_fSummonPoints[i][2],
-                        m_creature->GetOrientation(),
-                        TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 10 * MINUTE*IN_MILLISECONDS);
-                break;
-            case 3:
-                m_creature->SummonCreature(NPC_MURLOC_HUNTER,
-                    m_fSummonPoints[1][0],
-                    m_fSummonPoints[1][1],
-                    m_fSummonPoints[1][2],
-                    m_creature->GetOrientation(),
-                    TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 10 * MINUTE*IN_MILLISECONDS);
-                break;
-        }
-    }
-
-    void DoAttack(uint32 const uiDiff)
-    {
-        // TODO - add (or not) Flee at 15% hp as it was set in EventAI
-        if (m_uiSunderArmorTimer < uiDiff)
-        {
-            SpellAuraHolder* holder = m_creature->GetVictim()->GetSpellAuraHolder(SPELL_SUNDER_ARMOR);
-            if (!holder || holder->GetStackAmount() < 5)
+            if (m_greymist_murlocs.find(pMurloc->GetObjectGuid()) != m_greymist_murlocs.end()) // Found in our list.
             {
-                if (DoCastSpellIfCan(m_creature->GetVictim(), SPELL_SUNDER_ARMOR) == CAST_OK)
-                    m_uiSunderArmorTimer = urand(5000, 9000);
-            }
-            else
-                m_uiSunderArmorTimer = 5000;
-        }
-        else
-            m_uiSunderArmorTimer -= uiDiff;
+                sLog.outBasic("[SummoneNextWave] in m_greymist_murlocs: %d.", pMurloc->GetEntry());
 
-        if (m_uiNetTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature->GetVictim(), SPELL_NET) == CAST_OK)
-                m_uiNetTimer = urand(9000, 15000);
-        }
-        else
-            m_uiNetTimer -= uiDiff;
-
-        DoMeleeAttackIfReady();
-    }
-
-    void UpdateAI(uint32 const uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->GetVictim())
-        {
-            if (!m_uiEventPhase && m_bEventState && m_creature->GetVisibility() == VISIBILITY_OFF)
-            {
-                m_creature->ForcedDespawn();
-                m_creature->RemoveCorpse();
-            }
-
-            if (m_uiEventPhase)
-            {
-                if (!m_bEventState)
+                switch (pMurloc->GetEntry())
                 {
-                    m_creature->ForcedDespawn();
-                    m_creature->RemoveCorpse();
+                    case NPC_GREYMIST_COASTRUNNER:
+                    case NPC_GREYMIST_WARRIOR:
+                    case NPC_GREYMIST_HUNTER:
+                        b_wave_active = true;
+                        break;
+                    case NPC_MURKDEEP:
+                        b_murkdeep_active = true;
+                        if (pMurloc->IsDead())
+                            b_event_done = true;
+                        break;
                 }
+            }
+            else if (wave == 1 && pMurloc && pMurloc->IsAlive()) // No Wave 1 summon until all Murlocs in the camp are dead.
+            {
+                sLog.outBasic("[SummoneNextWave] Not all Murlocs dead.");
+                return false; // Not all Murlocs dead.
+            }
+        }
 
-                if (m_uiEventTimer < uiDiff)
+        // If all summoned NPCs are dead while Murkdeep is alive or not summoned.
+        if (!b_wave_active && !b_event_done)
+        {
+            for (uint8 i = 0; i < Murlocs.size(); ++i)
+            {
+                if (Murlocs[i].m_wave == wave)
                 {
-                    switch (m_uiEventPhase)
-                    {
-                    case 1:
-                        DoSummon();
-                        m_uiEventTimer = 30000;
-                        ++m_uiEventPhase;
-                        break;
-                    case 2:
-                        DoSummon();
-                        m_uiEventTimer = 30000;
-                        ++m_uiEventPhase;
-                        break;
-                    case 3:
-                        DoSummon();
-                        m_creature->SetVisibility(VISIBILITY_ON);
-                        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
+                    // Don't allow multiple Murkdeep summons.
+                    if (b_murkdeep_active && Murlocs[i].m_npcEntry == NPC_MURKDEEP)
+                        continue;
 
-                        Player* player = GetPlayer();
-                        if (player)
-                        {
-                            AttackStart(player);
-                        }
-                        else
-                        {
-                            m_creature->ForcedDespawn();
-                            m_creature->RemoveCorpse();
-                        }
-                        m_uiEventPhase = 0;
-                        break;
+                    if (Creature* pMurloc = me->SummonCreature(Murlocs[i].m_npcEntry,
+                        Murlocs[i].m_summon_position[0], Murlocs[i].m_summon_position[1], Murlocs[i].m_summon_position[2], Murlocs[i].m_summon_position[3],
+                        TEMPSUMMON_DEAD_DESPAWN, 0, true))
+                    {
+                        m_greymist_murlocs.insert(pMurloc->GetObjectGuid());
+                        pMurloc->SetWalk(false);
+                        pMurloc->SetHomePosition(Murlocs[i].m_end_position[0], Murlocs[i].m_end_position[1], Murlocs[i].m_end_position[2], Murlocs[i].m_summon_position[3]); // why is this not working??
+                        pMurloc->GetMotionMaster()->MovePoint(1, Murlocs[i].m_end_position[0], Murlocs[i].m_end_position[1], Murlocs[i].m_end_position[2], MOVE_PATHFINDING);
+                        sLog.outBasic("[SummoneNextWave] SummonCreature %d.", Murlocs[i].m_npcEntry);
                     }
                 }
-                else
-                    m_uiEventTimer -= uiDiff;
             }
-
-            return;
+        }
+        else
+        {
+            sLog.outBasic("[SummoneNextWave] m_greymist_murlocs not cleared.");
+            return false;
         }
 
-        DoAttack(uiDiff);
+        return true;
     }
 };
 
-CreatureAI* GetAI_npc_murkdeep(Creature* pCreature)
+GameObjectAI* GetAI_go_murkdeep_bonfire(GameObject* gameobject)
 {
-    return new npc_murkdeepAI(pCreature);
+    return new go_murkdeep_bonfire(gameobject);
 }
 
 bool at_murloc_camp(Player* pPlayer, AreaTriggerEntry const *pAt)
@@ -1199,23 +1156,14 @@ bool at_murloc_camp(Player* pPlayer, AreaTriggerEntry const *pAt)
         if (pPlayer->IsGameMaster() || pPlayer->IsDead())
             return false;
 
-        if (pPlayer && pPlayer->GetQuestStatus(QUEST_WANTED_MURKDEEP) == QUEST_STATUS_INCOMPLETE)
+        // Waves will be summoned even if the Quest is completed but not turned in.
+        if (pPlayer && (pPlayer->GetQuestStatus(QUEST_WANTED_MURKDEEP) == QUEST_STATUS_INCOMPLETE || pPlayer->GetQuestStatus(QUEST_WANTED_MURKDEEP) == QUEST_STATUS_COMPLETE))
         {
-            Creature *pCreature = GetClosestCreatureWithEntry(pPlayer, NPC_MURKDEEP, DEFAULT_VISIBILITY_DISTANCE);
-            if (pCreature && pCreature->IsAlive())
-                return false;
-
-            pCreature = pPlayer->SummonCreature(NPC_MURKDEEP, 
-                m_fSummonPoints[0][0], 
-                m_fSummonPoints[0][1], 
-                m_fSummonPoints[0][2], 
-                pPlayer->GetAngle(m_fSummonPoints[0][0], m_fSummonPoints[0][1]), 
-                TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 30 * MINUTE*IN_MILLISECONDS, true);
-
-            if (pCreature)
+            GameObject* pBonfire = GetClosestGameObjectWithEntry(pPlayer, GO_BONFIRE, DEFAULT_VISIBILITY_DISTANCE);
+            if (pBonfire)
             {
-                if (auto pMurkdeepAI = dynamic_cast<npc_murkdeepAI*>(pCreature->AI()))
-                    pMurkdeepAI->BeginEvent(pPlayer);
+                if (auto pBonfireAI = dynamic_cast<go_murkdeep_bonfire*>(pBonfire->AI()))
+                    pBonfireAI->SummoneNextWave();
             }
         }
     }
@@ -1277,8 +1225,8 @@ void AddSC_darkshore()
     newscript->RegisterSelf();
 
     newscript = new Script;
-    newscript->Name = "npc_murkdeep";
-    newscript->GetAI = &GetAI_npc_murkdeep;
+    newscript->Name = "go_murkdeep_bonfire";
+    newscript->GOGetAI = &GetAI_go_murkdeep_bonfire;
     newscript->RegisterSelf();
 
     newscript = new Script;
