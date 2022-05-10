@@ -990,7 +990,7 @@ struct MurlocStruct
     int m_wave;
     float m_summon_position[4];
     float m_end_position[3];
-    uint32 m_specialWaypoints; // unused.
+    uint32 m_specialWaypoints; // unused rn.
 };
 
 std::array<MurlocStruct, 7> const Murlocs =
@@ -1103,7 +1103,7 @@ struct go_murkdeep_bonfire : public GameObjectAI
                         break;
                 }
             }
-            else if (wave == 1 && pMurloc && pMurloc->IsAlive()) // No Wave 1 summon until all Murlocs in the camp are dead.
+            else if (wave == 1 && pMurloc && pMurloc->IsAlive()) // No Wave summons until all Murlocs in the camp are dead.
             {
                 sLog.outBasic("[SummoneNextWave] Not all Murlocs dead.");
                 return false; // Not all Murlocs dead.
