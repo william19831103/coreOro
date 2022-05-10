@@ -1060,7 +1060,7 @@ struct go_murkdeep_bonfire : public GameObjectAI
 
     void SummonedMovementInform(Creature* pSummoned, uint32 uiMotionType, uint32 uiPointId) override
     {
-        if (uiMotionType != POINT_MOTION_TYPE || !pSummoned)
+        if (!pSummoned || uiMotionType != POINT_MOTION_TYPE)
             return;
 
         pSummoned->GetMotionMaster()->MoveRandom(true, 5.0f);
@@ -1094,7 +1094,8 @@ struct go_murkdeep_bonfire : public GameObjectAI
                     case NPC_GREYMIST_COASTRUNNER:
                     case NPC_GREYMIST_WARRIOR:
                     case NPC_GREYMIST_HUNTER:
-                        b_wave_active = true;
+                        if (!b_murkdeep_active || b_event_done)
+                            b_wave_active = true;
                         break;
                     case NPC_MURKDEEP:
                         b_murkdeep_active = true;
