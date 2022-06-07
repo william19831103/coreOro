@@ -382,7 +382,7 @@ void WorldSession::HandleLootRoll(WorldPacket& recv_data)
     ObjectGuid lootedTarget;
     uint32 itemSlot;
     uint8  rollType;
-    recv_data >> lootedTarget;                              //guid of the item rolled
+    recv_data >> lootedTarget; // guid of the loot source
     recv_data >> itemSlot;
     recv_data >> rollType;
 
@@ -454,9 +454,8 @@ void WorldSession::HandleRaidTargetUpdateOpcode(WorldPacket& recv_data)
     recv_data >> x;
 
     Group* group = GetPlayer()->GetGroup();
-    if (!group || group->isBGGroup())
+    if (!group)
         group = GetPlayer()->GetOriginalGroup();
-
     if (!group)
         return;
 

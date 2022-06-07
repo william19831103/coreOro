@@ -1642,6 +1642,18 @@ void ObjectMgr::LoadCreatureDisplayInfoAddon()
                 const_cast<CreatureDisplayInfoAddon*>(minfo)->display_id_other_gender = 0;
             }
         }
+
+        if (minfo->speed_walk <= 0.0f)
+        {
+            sLog.outErrorDb("Table `creature_display_info_addon` has invalid walk speed (%g) defined for display id %u.", minfo->speed_walk, minfo->display_id);
+            const_cast<CreatureDisplayInfoAddon*>(minfo)->speed_walk = DEFAULT_NPC_WALK_SPEED_RATE;
+        }
+
+        if (minfo->speed_run <= 0.0f)
+        {
+            sLog.outErrorDb("Table `creature_display_info_addon` has invalid run speed (%g) defined for display id %u.", minfo->speed_run, minfo->display_id);
+            const_cast<CreatureDisplayInfoAddon*>(minfo)->speed_run = DEFAULT_NPC_RUN_SPEED_RATE;
+        }
     }
 
     // character races expected have display info data in table
@@ -3365,7 +3377,7 @@ void ObjectMgr::LoadItemPrototypes()
             continue;
 
         if ((obtainedItems.find(i) != obtainedItems.end()) ||
-            (proto->ExtraFlags & ITEM_EXTRA_MAIL_STATIONERY) ||
+            proto->HasExtraFlag(ITEM_EXTRA_MAIL_STATIONERY) ||
             !sWorld.getConfig(CONFIG_BOOL_PREVENT_ITEM_DATAMINING))
             proto->m_bDiscovered = true;
 
@@ -3765,8 +3777,7 @@ void ObjectMgr::LoadItemRequiredTarget()
         {
             if (SpellEntry const* pSpellInfo = sSpellMgr.GetSpellEntry(itr.SpellId))
             {
-                if (itr.SpellTrigger == ITEM_SPELLTRIGGER_ON_USE ||
-                    itr.SpellTrigger == ITEM_SPELLTRIGGER_ON_NO_DELAY_USE)
+                if (itr.SpellTrigger == ITEM_SPELLTRIGGER_ON_USE)
                 {
                     SpellScriptTargetBounds bounds = sSpellMgr.GetSpellScriptTargetBounds(pSpellInfo->Id);
                     if (bounds.first != bounds.second)
