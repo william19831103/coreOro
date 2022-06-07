@@ -548,7 +548,7 @@ void WorldSession::LogoutPlayer(bool Save)
         //remove all Arena queues.
         for (uint8 bgTypeId = BATTLEGROUND_NA1v1; bgTypeId <= BATTLEGROUND_DS5v5; ++bgTypeId)
         {
-            BattleGroundQueue& queue = sBattleGroundMgr.m_BattleGroundQueues[bgTypeId];
+            BattleGroundQueue& queue = sBattleGroundMgr.m_battleGroundQueues[bgTypeId];
             if (&queue)
                 queue.LeaveQueue(_player, BattleGroundTypeId(bgTypeId));
         }

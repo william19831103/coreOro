@@ -115,13 +115,13 @@ int QueueCounter(Player* pPlayer, uint8 bgTypeID)
     countHasinvite = 0;
     SUM = 0;
         
-    BattleGroundQueueTypeId bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(BattleGroundTypeId(bgTypeID));
+    BattleGroundQueueTypeId BgQueueTypeId = BattleGroundMgr::BgQueueTypeId(BattleGroundTypeId(bgTypeID));
 
-    if (!bgQueueTypeId)
+    if (!BgQueueTypeId)
         return NULL;
 
-    BattleGroundQueue& queue = sBattleGroundMgr.m_BattleGroundQueues[bgQueueTypeId];
-    BattleGroundTypeId typeId = BattleGroundMgr::BGTemplateId(BattleGroundQueueTypeId(bgQueueTypeId));
+    BattleGroundQueue& queue = sBattleGroundMgr.m_battleGroundQueues[BgQueueTypeId];
+    BattleGroundTypeId typeId = BattleGroundMgr::BgTemplateId(BattleGroundQueueTypeId(BgQueueTypeId));
 
     if (!typeId)
         return NULL;
@@ -139,11 +139,11 @@ int QueueCounter(Player* pPlayer, uint8 bgTypeID)
     // Loop trough all BGs with the bgTypeId.
     for (BattleGroundSet::const_iterator it = sBattleGroundMgr.GetBattleGroundsBegin(BattleGroundTypeId(typeId)); it != sBattleGroundMgr.GetBattleGroundsEnd(BattleGroundTypeId(typeId)); ++it)
     {
-        for (BattleGroundQueue::QueuedPlayersMap::const_iterator itr = queue.m_QueuedPlayers.begin(); itr != queue.m_QueuedPlayers.end(); ++itr)
+        for (BattleGroundQueue::QueuedPlayersMap::const_iterator itr = queue.m_queuedPlayers.begin(); itr != queue.m_queuedPlayers.end(); ++itr)
         {
             // Get the instance ID to check how many players are already in.
-            instanceId = itr->second.GroupInfo->IsInvitedToBGInstanceGUID;
-            removeTime = itr->second.GroupInfo->RemoveInviteTime;
+            instanceId = itr->second.groupInfo->isInvitedToBgInstanceGuid;
+            removeTime = itr->second.groupInfo->removeInviteTime;
     
             if (it->second->GetInstanceID() == instanceId)
             {
@@ -240,12 +240,12 @@ static bool Arena1v1CheckTalents(Player* pPlayer)
 
 inline std::string GetArenaBracketName(uint8 typeId)
 {
-    BattleGroundQueueTypeId bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(BattleGroundTypeId(typeId));
+    BattleGroundQueueTypeId BgQueueTypeId = BattleGroundMgr::BgQueueTypeId(BattleGroundTypeId(typeId));
 
-    if (!bgQueueTypeId)
+    if (!BgQueueTypeId)
         return "Arena Unknown";
 
-    switch (bgQueueTypeId)
+    switch (BgQueueTypeId)
     {
         case BATTLEGROUND_QUEUE_NA1v1:
         case BATTLEGROUND_QUEUE_BE1v1:
@@ -274,12 +274,12 @@ inline std::string GetArenaBracketName(uint8 typeId)
 
 inline uint8 GetArenaBracketType(uint8 bgtypeId)
 {
-    BattleGroundQueueTypeId bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(BattleGroundTypeId(bgtypeId));
+    BattleGroundQueueTypeId BgQueueTypeId = BattleGroundMgr::BgQueueTypeId(BattleGroundTypeId(bgtypeId));
 
-    if (!bgQueueTypeId)
+    if (!BgQueueTypeId)
         return NULL;
 
-    switch (bgQueueTypeId)
+    switch (BgQueueTypeId)
     {
         case BATTLEGROUND_QUEUE_NA1v1:
         case BATTLEGROUND_QUEUE_BE1v1:
@@ -535,16 +535,16 @@ bool JoinQueueArena(Player* pPlayer, GameObject* pGameObject, uint8 bgTypeid)
     if (!bgTypeID)
         return false;
 
-    BattleGroundQueueTypeId bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(bgTypeID);
+    BattleGroundQueueTypeId BgQueueTypeId = BattleGroundMgr::BgQueueTypeId(bgTypeID);
 
-    if (!bgQueueTypeId)
+    if (!BgQueueTypeId)
         return false;
 
     if (PlayerIsInQueueFor1v1(pPlayer) && GetArenaBracketType(bgTypeID) == 1 || PlayerIsInQueueFor2v2(pPlayer) && GetArenaBracketType(bgTypeID) == 2 || PlayerIsInQueueFor3v3(pPlayer) && GetArenaBracketType(bgTypeID) == 3 || PlayerIsInQueueFor5v5(pPlayer) && GetArenaBracketType(bgTypeID) == 5)
         return false;
 
-    BattleGroundQueue& queue = sBattleGroundMgr.m_BattleGroundQueues[bgQueueTypeId];
-    for (BattleGroundQueue::QueuedPlayersMap::const_iterator it = queue.m_QueuedPlayers.begin(); it != queue.m_QueuedPlayers.end(); ++it)
+    BattleGroundQueue& queue = sBattleGroundMgr.m_battleGroundQueues[BgQueueTypeId];
+    for (BattleGroundQueue::QueuedPlayersMap::const_iterator it = queue.m_queuedPlayers.begin(); it != queue.m_queuedPlayers.end(); ++it)
     {
         if (it->first == pPlayer->GetObjectGuid())
             return false;
@@ -559,18 +559,18 @@ bool JoinQueueArena(Player* pPlayer, GameObject* pGameObject, uint8 bgTypeid)
     if (!joinAsGroup)
     {
         // Check if already in queue.
-        if (pPlayer->GetBattleGroundQueueIndex(bgQueueTypeId) < PLAYER_MAX_BATTLEGROUND_QUEUES)
+        if (pPlayer->GetBattleGroundQueueIndex(BgQueueTypeId) < PLAYER_MAX_BATTLEGROUND_QUEUES)
             return false;
 
         // Check if has free queue slots.
         if (!pPlayer->HasFreeBattleGroundQueueId())
             return false;
 
-        BattleGroundQueue& bgQueue = sBattleGroundMgr.m_BattleGroundQueues[bgQueueTypeId];
+        BattleGroundQueue& bgQueue = sBattleGroundMgr.m_battleGroundQueues[BgQueueTypeId];
 
         GroupQueueInfo* ginfo = bgQueue.AddGroup(pPlayer, nullptr, bgTypeID, bracketEntry, false , 0, 0);
         uint32 avgTime = bgQueue.GetAverageQueueWaitTime(ginfo, bracketEntry);
-        uint32 queueSlot = pPlayer->AddBattleGroundQueueId(bgQueueTypeId);
+        uint32 queueSlot = pPlayer->AddBattleGroundQueueId(BgQueueTypeId);
         pPlayer->SetBattleGroundEntryPoint(pPlayer, false);
 
         WorldPacket data;
@@ -588,7 +588,7 @@ bool JoinQueueArena(Player* pPlayer, GameObject* pGameObject, uint8 bgTypeid)
             return false;
 
         std::vector<uint32> excludedMembers;
-        uint32 err = grp->CanJoinBattleGroundQueue(bgTypeID, bgQueueTypeId, 0, bg->GetMaxPlayersPerTeam(), pPlayer, &excludedMembers);
+        uint32 err = grp->CanJoinBattleGroundQueue(bgTypeID, BgQueueTypeId, 0, bg->GetMaxPlayersPerTeam(), pPlayer, &excludedMembers);
         isPremade = sWorld.getConfig(CONFIG_UINT32_BATTLEGROUND_PREMADE_GROUP_WAIT_FOR_MATCH) &&
             (grp->GetMembersCount() >= sWorld.getConfig(CONFIG_UINT32_BATTLEGROUND_PREMADE_QUEUE_GROUP_MIN_SIZE));
 
@@ -608,7 +608,7 @@ bool JoinQueueArena(Player* pPlayer, GameObject* pGameObject, uint8 bgTypeid)
 
         // if we're here, then the conditions to join a bg are met. We can proceed in joining.
 
-        BattleGroundQueue& bgQueue = sBattleGroundMgr.m_BattleGroundQueues[bgQueueTypeId];
+        BattleGroundQueue& bgQueue = sBattleGroundMgr.m_battleGroundQueues[BgQueueTypeId];
         DEBUG_LOG("Battleground: the following players are joining as group:");
         GroupQueueInfo* ginfo = bgQueue.AddGroup(pPlayer, grp, bgTypeID, bracketEntry, isPremade, 0, &excludedMembers);
         uint32 avgTime = bgQueue.GetAverageQueueWaitTime(ginfo, bracketEntry);
@@ -628,7 +628,7 @@ bool JoinQueueArena(Player* pPlayer, GameObject* pGameObject, uint8 bgTypeid)
                 continue;
             }
 
-            uint32 queueSlot = member->AddBattleGroundQueueId(bgQueueTypeId);   // Add to queue.
+            uint32 queueSlot = member->AddBattleGroundQueueId(BgQueueTypeId);   // Add to queue.
             member->SetBattleGroundEntryPoint(pPlayer, false);                  // Store entry point coords.
 
             WorldPacket data;
@@ -637,12 +637,12 @@ bool JoinQueueArena(Player* pPlayer, GameObject* pGameObject, uint8 bgTypeid)
             member->GetSession()->SendPacket(&data);
             sBattleGroundMgr.BuildGroupJoinedBattlegroundPacket(&data, bg->GetMapId());
             member->GetSession()->SendPacket(&data);
-            DEBUG_LOG("Battleground: player joined queue for bg queue type %u bg type %u: GUID %u, NAME %s", bgQueueTypeId, bgTypeID, member->GetGUIDLow(), member->GetName());
+            DEBUG_LOG("Battleground: player joined queue for bg queue type %u bg type %u: GUID %u, NAME %s", BgQueueTypeId, bgTypeID, member->GetGUIDLow(), member->GetName());
         }
         DEBUG_LOG("Battleground: group end");
     }
 
-    sBattleGroundMgr.ScheduleQueueUpdate(bgQueueTypeId, bgTypeID, bracketEntry);
+    sBattleGroundMgr.ScheduleQueueUpdate(BgQueueTypeId, bgTypeID, bracketEntry);
 
     std::ostringstream ss;
 
@@ -741,9 +741,9 @@ bool GossipHello_ArenaMaster(Player* pPlayer, GameObject* pGameObject)
                 playerstr = " Player";
 
             std::ostringstream gossipname;
-            BattleGroundQueueTypeId bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(BattleGroundTypeId(bgTypeId));
-            BattleGroundQueue& queue = sBattleGroundMgr.m_BattleGroundQueues[bgQueueTypeId];
-            BattleGroundTypeId typeId = BattleGroundMgr::BGTemplateId(BattleGroundQueueTypeId(bgQueueTypeId));
+            BattleGroundQueueTypeId BgQueueTypeId = BattleGroundMgr::BgQueueTypeId(BattleGroundTypeId(bgTypeId));
+            BattleGroundQueue& queue = sBattleGroundMgr.m_battleGroundQueues[BgQueueTypeId];
+            BattleGroundTypeId typeId = BattleGroundMgr::BgTemplateId(BattleGroundQueueTypeId(BgQueueTypeId));
             BattleGround* bg = sBattleGroundMgr.GetBattleGroundTemplate(typeId);
 
             // Found an arena with not enough Players, show a gossip to join them.
@@ -757,17 +757,17 @@ bool GossipHello_ArenaMaster(Player* pPlayer, GameObject* pGameObject)
                     case 5: SomeoneInQueue_Five_v_Five = true; break;
                 }
 
-                if (!pPlayer->InBattleGroundQueueForBattleGroundQueueType(bgQueueTypeId))
+                if (!pPlayer->InBattleGroundQueueForBattleGroundQueueType(BgQueueTypeId))
                 {
                     gossipname << GetArenaBracketName(bgTypeId).c_str() << "\n(" << std::to_string(countQueue) << playerstr.c_str() << " waiting)\n\n ";
-                    pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, gossipname.str().c_str(), 0, bgQueueTypeId);
+                    pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, gossipname.str().c_str(), 0, BgQueueTypeId);
                 }
             }
             // If in queue show a gossip to leave it.
-            if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(bgQueueTypeId))
+            if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BgQueueTypeId))
             {
                 gossipname << "Leave " << GetArenaBracketName(bgTypeId) << "\n(" << std::to_string(countQueue) << playerstr.c_str() << " waiting)\n\n ";
-                pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, gossipname.str().c_str(), 0, bgQueueTypeId + 100);
+                pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, gossipname.str().c_str(), 0, BgQueueTypeId + 100);
             }
 
             ++counter;
@@ -964,7 +964,7 @@ bool GossipSelect_ArenaMaster(Player* pPlayer, GameObject* pGameObject, uint32 s
         case GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS3v3:
         case GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS5v5:
         {
-            BattleGroundQueue &queue = sBattleGroundMgr.m_BattleGroundQueues[action - 100];
+            BattleGroundQueue &queue = sBattleGroundMgr.m_battleGroundQueues[action - 100];
             if (&queue)
                 queue.LeaveQueue(pPlayer, BattleGroundTypeId(action - 100));
             GossipHello_ArenaMaster(pPlayer, pGameObject);
@@ -998,7 +998,7 @@ bool GossipSelect_ArenaMaster(Player* pPlayer, GameObject* pGameObject, uint32 s
         // Leave every Arena queue first.
         for (uint8 bgTypeId = BATTLEGROUND_NA1v1; bgTypeId <= BATTLEGROUND_DS5v5; ++bgTypeId)
         {
-            BattleGroundQueue& queue = sBattleGroundMgr.m_BattleGroundQueues[bgTypeId];
+            BattleGroundQueue& queue = sBattleGroundMgr.m_battleGroundQueues[bgTypeId];
             if (&queue)
                 queue.LeaveQueue(pPlayer, BattleGroundTypeId(bgTypeId));
         }
@@ -1079,10 +1079,10 @@ bool GossipSelect_ArenaMaster(Player* pPlayer, GameObject* pGameObject, uint32 s
                 if (!it->first)
                     continue;
 
-                BattleGroundQueueTypeId bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(BattleGroundTypeId(bgTypeId));
+                BattleGroundQueueTypeId BgQueueTypeId = BattleGroundMgr::BgQueueTypeId(BattleGroundTypeId(bgTypeId));
                 BattleGround* bg = it->second;
 
-                if (!bgQueueTypeId)
+                if (!BgQueueTypeId)
                     continue;
 
                 if (!bg)

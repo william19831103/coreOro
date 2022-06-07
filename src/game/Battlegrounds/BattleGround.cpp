@@ -219,7 +219,7 @@ BattleGround::BattleGround()
     m_tenSecondsCountDown = false;
     m_tenSecondsCountDownTimer = 0;
 
-    m_StartDelayTime = 0;
+    m_startDelayTime = 0;
     m_startDelayTimes[BG_STARTING_EVENT_FIRST]  = BG_START_DELAY_2M;
     m_startDelayTimes[BG_STARTING_EVENT_SECOND] = BG_START_DELAY_1M;
     m_startDelayTimes[BG_STARTING_EVENT_THIRD]  = BG_START_DELAY_30S;
@@ -259,7 +259,7 @@ BattleGround::~BattleGround()
     // remove from bg free slot queue
     this->RemoveFromBGFreeSlotQueue();
 
-    for (const auto& itr : m_playerscores)
+    for (const auto& itr : m_playerScores)
         delete itr.second;
 }
 
@@ -339,29 +339,29 @@ void BattleGround::Update(uint32 diff)
     {
         if (GetStartDelayTime() <= (m_startDelayTimes[BG_STARTING_EVENT_THIRD] - (19 * IN_MILLISECONDS)) && GetStatus() == STATUS_WAIT_JOIN)
         {
-            if (!m_TenSecondsCountDown)
+            if (!m_tenSecondsCountDown)
             {
-                m_TenSecondsCountDown = true;
-                m_TenSecondsCountDownTimer = GetStartDelayTime();
+                m_tenSecondsCountDown = true;
+                m_tenSecondsCountDownTimer = GetStartDelayTime();
             }
-            else if (m_TenSecondsCountDownTimer < diff)
-                m_TenSecondsCountDown = false;
+            else if (m_tenSecondsCountDownTimer < diff)
+                m_tenSecondsCountDown = false;
             else if (GetStatus() != STATUS_IN_PROGRESS)
             {
-                uint32 newtime = m_TenSecondsCountDownTimer - diff;
-                if (newtime / IN_MILLISECONDS != m_TenSecondsCountDownTimer / IN_MILLISECONDS)
+                uint32 newtime = m_tenSecondsCountDownTimer - diff;
+                if (newtime / IN_MILLISECONDS != m_tenSecondsCountDownTimer / IN_MILLISECONDS)
                 {
                     PlaySoundToAll(UI_BATTLEGROUNDCOUNTDOWN_TIMER);
-                    PSendMessageToAll(ARENA_START_COUNTDOWN, CHAT_MSG_BG_SYSTEM_NEUTRAL, nullptr, (uint32)(m_TenSecondsCountDownTimer / IN_MILLISECONDS));
+                    PSendMessageToAll(ARENA_START_COUNTDOWN, CHAT_MSG_BG_SYSTEM_NEUTRAL, nullptr, (uint32)(m_tenSecondsCountDownTimer / IN_MILLISECONDS));
                 }
                 if (!m_playersReady)
                     m_playersReady = true;
-                m_TenSecondsCountDownTimer = newtime;
+                m_tenSecondsCountDownTimer = newtime;
             }
 
         }
-        else if (m_TenSecondsCountDown)
-            m_TenSecondsCountDown = false;
+        else if (m_tenSecondsCountDown)
+            m_tenSecondsCountDown = false;
     }
     //UterusOne 10sec Battle starting timer end
 
@@ -739,8 +739,8 @@ void BattleGround::EndBattleGround(Team winner)
 
         if (LogsDatabase && sWorld.getConfig(CONFIG_BOOL_LOGSDB_BATTLEGROUNDS))
         {
-            BattleGroundScoreMap::const_iterator score = m_playerscores.find(itr.first);
-            if (score != m_playerscores.end())
+            BattleGroundScoreMap::const_iterator score = m_playerScores.find(itr.first);
+            if (score != m_playerScores.end())
             {
                 static SqlStatementID insLogBg;
                 SqlStatement logStmt = LogsDatabase.CreateStatement(insLogBg,
@@ -922,11 +922,11 @@ void BattleGround::RemovePlayerAtLeave(ObjectGuid guid, bool transport, bool sen
         participant = true;
     }
 
-    BattleGroundScoreMap::iterator itr2 = m_playerscores.find(guid);
-    if (itr2 != m_playerscores.end())
+    BattleGroundScoreMap::iterator itr2 = m_playerScores.find(guid);
+    if (itr2 != m_playerScores.end())
     {
         delete itr2->second;                                // delete player's score
-        m_playerscores.erase(itr2);
+        m_playerScores.erase(itr2);
     }
 
     Player* pPlayer = sObjectMgr.GetPlayer(guid);
@@ -1027,9 +1027,9 @@ void BattleGround::Reset()
 
     m_players.clear();
 
-    for (const auto& itr : m_playerscores)
+    for (const auto& itr : m_playerScores)
         delete itr.second;
-    m_playerscores.clear();
+    m_playerScores.clear();
 }
 
 void BattleGround::StartBattleGround()
@@ -1199,9 +1199,9 @@ bool BattleGround::HasFreeSlots() const
 void BattleGround::UpdatePlayerScore(Player* source, uint32 type, uint32 value)
 {
     //this procedure is called from virtual function implemented in bg subclass
-    BattleGroundScoreMap::const_iterator itr = m_playerscores.find(source->GetObjectGuid());
+    BattleGroundScoreMap::const_iterator itr = m_playerScores.find(source->GetObjectGuid());
 
-    if (itr == m_playerscores.end())                        // player not found...
+    if (itr == m_playerScores.end())                        // player not found...
         return;
 
     switch (type)

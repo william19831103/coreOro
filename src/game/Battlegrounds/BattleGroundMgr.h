@@ -59,6 +59,7 @@ struct GroupQueueInfo                                       // stores informatio
     uint32  removeInviteTime;                               // time when we will remove invite for players in group
     uint32  isInvitedToBgInstanceGuid;                      // was invited to certain BG
     uint32  desiredInstanceId;                              // queued for this instance specifically
+    uint32  bracketId;                                      // queued for this instance specifically
 };
 
 enum BattleGroundQueueGroupTypes
@@ -226,8 +227,8 @@ class BattleGroundMgr
 
         uint32 CreateBattleGround(BattleGroundTypeId bgTypeId, uint32 minPlayersPerTeam, uint32 maxPlayersPerTeam, uint32 LevelMin, uint32 LevelMax, uint32 AllianceWinSpell, uint32 AllianceLoseSpell, uint32 HordeWinSpell, uint32 HordeLoseSpell, char const* BattleGroundName, uint32 MapID, float Team1StartLocX, float Team1StartLocY, float Team1StartLocZ, float Team1StartLocO, float Team2StartLocX, float Team2StartLocY, float Team2StartLocZ, float Team2StartLocO);
 
-        void AddBattleGround(uint32 InstanceID, BattleGroundTypeId bgTypeId, BattleGround* bg) { m_BattleGrounds[bgTypeId][InstanceID] = bg; };
-        void RemoveBattleGround(uint32 instanceID, BattleGroundTypeId bgTypeId) { m_BattleGrounds[bgTypeId].erase(instanceID); }
+        void AddBattleGround(uint32 InstanceID, BattleGroundTypeId bgTypeId, BattleGround* bg) { m_battleGrounds[bgTypeId][InstanceID] = bg; };
+        void RemoveBattleGround(uint32 instanceID, BattleGroundTypeId bgTypeId) { m_battleGrounds[bgTypeId].erase(instanceID); }
         uint32 CreateClientVisibleInstanceId(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracketId);
         static bool IsArena(BattleGroundTypeId bgTypeId);
         void DeleteClientVisibleInstanceId(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracketId, uint32 clientInstanceID)

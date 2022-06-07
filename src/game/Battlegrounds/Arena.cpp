@@ -19,9 +19,9 @@
 
 Arena::Arena()
 {
-    m_StartMessageIds[BG_STARTING_EVENT_SECOND]	= ARENA_START_ONE_MINUTE;
-    m_StartMessageIds[BG_STARTING_EVENT_THIRD]	= ARENA_START_HALF_MINUTE;
-    m_StartMessageIds[BG_STARTING_EVENT_FOURTH]	= ARENA_HAS_BEGUN;
+    m_startMessageIds[BG_STARTING_EVENT_SECOND]	= ARENA_START_ONE_MINUTE;
+    m_startMessageIds[BG_STARTING_EVENT_THIRD]	= ARENA_START_HALF_MINUTE;
+    m_startMessageIds[BG_STARTING_EVENT_FOURTH]	= ARENA_HAS_BEGUN;
 
     m_counter                   = NULL;
     m_pipeKnockBackTimer        = NULL;
@@ -87,7 +87,7 @@ void Arena::DoWaterfallKick()
 {
     if (Creature* waterSpout = GetBgMap()->GetCreature(GetSingleCreatureGuid(NPC_WATERFALL_KICKER, 0)))
     {
-        for (BattleGroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+        for (BattleGroundPlayerMap::const_iterator itr = m_players.begin(); itr != m_players.end(); ++itr)
         {
             Player* player = sObjectMgr.GetPlayer(itr->first);
             if (player && waterSpout->GetDistance(player) < 5.0)
@@ -105,7 +105,7 @@ void Arena::KickFromPipe()
     {
         if (Creature* kicker = GetBgMap()->GetCreature(GetSingleCreatureGuid(i, 0)))
         {
-            for (BattleGroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+            for (BattleGroundPlayerMap::const_iterator itr = m_players.begin(); itr != m_players.end(); ++itr)
             {
                 Player* player = sObjectMgr.GetPlayer(itr->first);
                 if (player && kicker->GetDistance(player) < 53.0)
@@ -127,7 +127,7 @@ void Arena::KickFromPipe()
 
 void Arena::ApplyMortalStack()
 {
-    for (BattleGroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+    for (BattleGroundPlayerMap::const_iterator itr = m_players.begin(); itr != m_players.end(); ++itr)
     {
         Player* player = sObjectMgr.GetPlayer(itr->first);
         if (player)
@@ -144,15 +144,15 @@ void Arena::ApplyMortalStack()
 
 void Arena::Spawn_Stash()
 {
-    BGObjects::const_iterator itr = m_EventObjects[MAKE_PAIR32(STASH, 0)].gameobjects.begin();
-    for (; itr != m_EventObjects[MAKE_PAIR32(STASH, 0)].gameobjects.end(); ++itr)
+    BGObjects::const_iterator itr = m_eventObjects[MAKE_PAIR32(STASH, 0)].gameobjects.begin();
+    for (; itr != m_eventObjects[MAKE_PAIR32(STASH, 0)].gameobjects.end(); ++itr)
         SpawnBGObject(*itr, RESPAWN_IMMEDIATELY);
 }
 
 void Arena::Despawn_Stash()
 {
-    BGObjects::const_iterator itr = m_EventObjects[MAKE_PAIR32(STASH, 0)].gameobjects.begin();
-    for (; itr != m_EventObjects[MAKE_PAIR32(STASH, 0)].gameobjects.end(); ++itr)
+    BGObjects::const_iterator itr = m_eventObjects[MAKE_PAIR32(STASH, 0)].gameobjects.begin();
+    for (; itr != m_eventObjects[MAKE_PAIR32(STASH, 0)].gameobjects.end(); ++itr)
     {
         Map* map = GetBgMap();
         GameObject* obj = map->GetGameObject(*itr);
@@ -164,43 +164,43 @@ void Arena::Despawn_Stash()
 
 void Arena::Spawn_Doodad_DalaranSewer01()
 {
-    BGObjects::const_iterator itr = m_EventObjects[MAKE_PAIR32(DOODAD_DALARANSEWER01, 0)].gameobjects.begin();
-    for (; itr != m_EventObjects[MAKE_PAIR32(DOODAD_DALARANSEWER01, 0)].gameobjects.end(); ++itr)
+    BGObjects::const_iterator itr = m_eventObjects[MAKE_PAIR32(DOODAD_DALARANSEWER01, 0)].gameobjects.begin();
+    for (; itr != m_eventObjects[MAKE_PAIR32(DOODAD_DALARANSEWER01, 0)].gameobjects.end(); ++itr)
         SpawnBGObject(*itr, RESPAWN_IMMEDIATELY);
 }
 
 void Arena::Spawn_Shadow_Sight()
 {
-    BGObjects::const_iterator itr = m_EventObjects[MAKE_PAIR32(SHADOW_SIGHT, 0)].gameobjects.begin();
-    for (; itr != m_EventObjects[MAKE_PAIR32(SHADOW_SIGHT, 0)].gameobjects.end(); ++itr)
+    BGObjects::const_iterator itr = m_eventObjects[MAKE_PAIR32(SHADOW_SIGHT, 0)].gameobjects.begin();
+    for (; itr != m_eventObjects[MAKE_PAIR32(SHADOW_SIGHT, 0)].gameobjects.end(); ++itr)
         SpawnBGObject(*itr, BUFF_RESPAWN_TIME);
 }
 
 void Arena::Spawn_Doodad_DalaranSewer_ArenaWaterFall()
 {
-    BGObjects::const_iterator itr = m_EventObjects[MAKE_PAIR32(DOODAD_DALARANSEWER_ARENAWATERFALL, 0)].gameobjects.begin();
-    for (; itr != m_EventObjects[MAKE_PAIR32(DOODAD_DALARANSEWER_ARENAWATERFALL, 0)].gameobjects.end(); ++itr)
+    BGObjects::const_iterator itr = m_eventObjects[MAKE_PAIR32(DOODAD_DALARANSEWER_ARENAWATERFALL, 0)].gameobjects.begin();
+    for (; itr != m_eventObjects[MAKE_PAIR32(DOODAD_DALARANSEWER_ARENAWATERFALL, 0)].gameobjects.end(); ++itr)
         SpawnBGObject(*itr, RESPAWN_IMMEDIATELY);
 }
 
 void Arena::Spawn_Doodad_DalaranSewer_ArenaWaterFall_Collision01()
 {
-    BGObjects::const_iterator itr = m_EventObjects[MAKE_PAIR32(DOODAD_DALARANSEWER_ARENAWATERFALL_COLLISION01, 0)].gameobjects.begin();
-    for (; itr != m_EventObjects[MAKE_PAIR32(DOODAD_DALARANSEWER_ARENAWATERFALL_COLLISION01, 0)].gameobjects.end(); ++itr)
+    BGObjects::const_iterator itr = m_eventObjects[MAKE_PAIR32(DOODAD_DALARANSEWER_ARENAWATERFALL_COLLISION01, 0)].gameobjects.begin();
+    for (; itr != m_eventObjects[MAKE_PAIR32(DOODAD_DALARANSEWER_ARENAWATERFALL_COLLISION01, 0)].gameobjects.end(); ++itr)
         SpawnBGObject(*itr, RESPAWN_IMMEDIATELY);
 }
 
 void Arena::TurnOff(uint8 event1)
 {
-    BGObjects::const_iterator itr = m_EventObjects[MAKE_PAIR32(event1, 0)].gameobjects.begin();
-    for (; itr != m_EventObjects[MAKE_PAIR32(event1, 0)].gameobjects.end(); ++itr)
+    BGObjects::const_iterator itr = m_eventObjects[MAKE_PAIR32(event1, 0)].gameobjects.begin();
+    for (; itr != m_eventObjects[MAKE_PAIR32(event1, 0)].gameobjects.end(); ++itr)
         DoorOpen(*itr);
 }
 
 void Arena::TurnOn(uint8 event1)
 {
-    BGObjects::const_iterator itr = m_EventObjects[MAKE_PAIR32(event1, 0)].gameobjects.begin();
-    for (; itr != m_EventObjects[MAKE_PAIR32(event1, 0)].gameobjects.end(); ++itr)
+    BGObjects::const_iterator itr = m_eventObjects[MAKE_PAIR32(event1, 0)].gameobjects.begin();
+    for (; itr != m_eventObjects[MAKE_PAIR32(event1, 0)].gameobjects.end(); ++itr)
         DoorClose(*itr);
 }
 
@@ -380,7 +380,7 @@ void Arena::StartingEventOpenDoors()
     if (!GetPlayersCountByTeam(ALLIANCE) || !GetPlayersCountByTeam(HORDE))
         EndBattleGround(TEAM_NONE);
 
-    for (BattleGroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+    for (BattleGroundPlayerMap::const_iterator itr = m_players.begin(); itr != m_players.end(); ++itr)
     {
         Player* player = sObjectMgr.GetPlayer(itr->first);
 
@@ -444,8 +444,8 @@ void Arena::StartingEventOpenDoors()
 
 void Arena::UpdatePlayerScore(Player* Source, uint32 type, uint32 value)
 {
-    BattleGroundScoreMap::iterator itr = m_PlayerScores.find(Source->GetObjectGuid());
-    if (itr == m_PlayerScores.end())
+    BattleGroundScoreMap::iterator itr = m_playerScores.find(Source->GetObjectGuid());
+    if (itr == m_playerScores.end())
         return;
     switch (type)
     {
@@ -510,7 +510,7 @@ void Arena::AddPlayer(Player* player)
     // Leave all other Arena queues.
     for (uint8 bgTypeId = BATTLEGROUND_NA1v1; bgTypeId <= BATTLEGROUND_DS5v5; ++bgTypeId)
     {
-        BattleGroundQueue &queue = sBattleGroundMgr.m_BattleGroundQueues[bgTypeId];
+        BattleGroundQueue &queue = sBattleGroundMgr.m_battleGroundQueues[bgTypeId];
         if (&queue)
             queue.LeaveQueue(player, BattleGroundTypeId(bgTypeId));
     }
@@ -568,7 +568,7 @@ void Arena::AddPlayer(Player* player)
 
     ArenaScore* sc = new ArenaScore;
 
-    m_PlayerScores[player->GetObjectGuid()] = sc;
+    m_playerScores[player->GetObjectGuid()] = sc;
 
     UpdateArenaWorldState();
 }
@@ -601,7 +601,7 @@ void Arena::RemovePlayer(Player * player)
 
 void Arena::EndBattleGround(Team winner)
 {
-    for (BattleGroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+    for (BattleGroundPlayerMap::const_iterator itr = m_players.begin(); itr != m_players.end(); ++itr)
     {
         Player* player = sObjectMgr.GetPlayer(itr->first);
 
@@ -652,16 +652,16 @@ void Arena::CheckWinConditions()
             uint32 alliance_damage = 0;
             uint32 horde_damage = 0;
 
-            for (BattleGroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+            for (BattleGroundPlayerMap::const_iterator itr = m_players.begin(); itr != m_players.end(); ++itr)
             {
                 Player* player = sObjectMgr.GetPlayer(itr->first);
 
                 if (!player)
                     continue;
 
-                BattleGroundScoreMap::iterator score = m_PlayerScores.find(player->GetGUID());
+                BattleGroundScoreMap::iterator score = m_playerScores.find(player->GetGUID());
 
-                if (score != m_PlayerScores.end())
+                if (score != m_playerScores.end())
                 {
                     switch (player->GetBGTeamId())
                     {
