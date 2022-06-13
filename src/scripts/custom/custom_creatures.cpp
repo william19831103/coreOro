@@ -733,7 +733,7 @@ bool GossipHello_ArenaMaster(Player* pPlayer, GameObject* pGameObject)
             if (!countQueue)
                 continue;
 
-            std::string playerstr;
+            std::string playerstr = " Player";
 
             if (countQueue > 1)
                 playerstr = " Players";
@@ -1881,8 +1881,6 @@ void ScaleMobsInInstance(Player* pPlayer, Creature* pCreature)
                 uint32 AttackTime = pTrash->GetAttackTime(BASE_ATTACK) * Divison;
 
                 CreatureInfo const* cinfo = pTrash->GetCreatureInfo();
-                pTrash->SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, cinfo->dmg_min + cinfo->dmg_min / Divison);
-                pTrash->SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, cinfo->dmg_max + cinfo->dmg_max / Divison);
                 pTrash->SetArmor(Armor);
                 pTrash->SetMaxHealth(Health);
                 pTrash->SetAttackTime(BASE_ATTACK, AttackTime);

@@ -357,9 +357,8 @@ void Arena::StartingEventCloseDoors()
 
     if (IsDalaranArena())
     {
-        // if we don't do this, you can not see the water flush visual.
-        SetSpawnEventMode(NPC_WATERSPOUT1, 0, RESPAWN_START);
-        SetSpawnEventMode(NPC_WATERSPOUT2, 0, RESPAWN_START);
+        SetSpawnEventMode(NPC_WATERSPOUT1, 0, RESPAWN_START); // if we don't do this, you can not see the water flush visual.
+        SetSpawnEventMode(NPC_WATERSPOUT2, 0, RESPAWN_START); // if we don't do this, you can not see the water flush visual.
         Spawn_Doodad_DalaranSewer_ArenaWaterFall();
         Spawn_Doodad_DalaranSewer01();
         Spawn_Doodad_DalaranSewer_ArenaWaterFall_Collision01();
