@@ -2150,6 +2150,7 @@ void SendDefaultMenu_TeleportNPC(Player* pPlayer, Creature *pCreature, uint32 ac
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "<- Main Menu", GOSSIP_SENDER_INFO, 100);
 
             pPlayer->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE, pCreature->GetGUID());
+
             break;
 
 // ----### CITIES ###----
@@ -2187,6 +2188,7 @@ void SendDefaultMenu_TeleportNPC(Player* pPlayer, Creature *pCreature, uint32 ac
 // ----### STARTING PLACES ####----
 
 // ### HORDE ###
+
         case 40: // Shadow Grave
             pPlayer->CLOSE_GOSSIP_MENU();
             pPlayer->TeleportTo(0, 1663.517f, 1678.187744f, 120.5303f, 0.0f);
@@ -2568,6 +2570,7 @@ bool GossipHello_EnchantNPC(Player* pPlayer, Creature* pCreature)
     return true;
 }
 bool GossipSelect_EnchantNPC(Player* pPlayer, Creature* pCreature, uint32 sender, uint32 action)
+
 {
     if (sender != GOSSIP_SENDER_MAIN)
         return true;
@@ -2778,7 +2781,6 @@ bool GossipSelect_EnchantNPC(Player* pPlayer, Creature* pCreature, uint32 sender
 }
 
 
-
 void LearnSkillRecipesHelper(Player* pPlayer, uint32 skill_id)
 {
     uint32 classmask = pPlayer->GetClassMask();
@@ -2823,7 +2825,7 @@ bool LearnAllRecipesInProfession(Player* pPlayer, SkillType skill)
 
     if (!SkillInfo)
     {
-        sLog.outError("Profession NPC: received non-valid skill ID");
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Profession NPC: received non-valid skill ID");
         return false;
     }
 

@@ -47,7 +47,7 @@ void WorldSession::HandleAuctionHelloOpcode(WorldPacket& recv_data)
     Creature* unit = GetPlayer()->GetNPCIfCanInteractWith(auctioneerGuid, UNIT_NPC_FLAG_AUCTIONEER);
     if (!unit)
     {
-        DEBUG_LOG("WORLD: HandleAuctionHelloOpcode - %s not found or you can't interact with him.", auctioneerGuid.GetString().c_str());
+        sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "WORLD: HandleAuctionHelloOpcode - %s not found or you can't interact with him.", auctioneerGuid.GetString().c_str());
         return;
     }
 
@@ -219,7 +219,7 @@ AuctionHouseEntry const* WorldSession::GetCheckedAuctionHouseForAuctioneer(Objec
         // using special access modes (1,-1) done at mode set in command, so not need recheck
         if (GetPlayer()->GetAuctionAccessMode() == 0 && !ChatHandler(GetPlayer()).FindCommand("auction"))
         {
-            DEBUG_LOG("%s attempt open auction in cheating way.", guid.GetString().c_str());
+            sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "%s attempt open auction in cheating way.", guid.GetString().c_str());
             return nullptr;
         }
 
@@ -231,7 +231,7 @@ AuctionHouseEntry const* WorldSession::GetCheckedAuctionHouseForAuctioneer(Objec
         auctioneer = GetPlayer()->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_AUCTIONEER);
         if (!auctioneer)
         {
-            DEBUG_LOG("Auctioneeer %s accessed in cheating way.", guid.GetString().c_str());
+            sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "Auctioneeer %s accessed in cheating way.", guid.GetString().c_str());
             return nullptr;
         }
     }
@@ -243,8 +243,6 @@ AuctionHouseEntry const* WorldSession::GetCheckedAuctionHouseForAuctioneer(Objec
 // this void creates new auction and adds auction to some auctionhouse
 void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
 {
-    DEBUG_LOG("WORLD: HandleAuctionSellItem");
-
     ObjectGuid auctioneerGuid;
     ObjectGuid itemGuid;
     uint32 etime, bid, buyout;
@@ -318,7 +316,7 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
     // do not allow to sell already auctioned items
     if (sAuctionMgr.GetAItem(itemGuid.GetCounter()))
     {
-        sLog.outError("AuctionError, %s is sending %s, but item is already in another auction", pl->GetGuidStr().c_str(), itemGuid.GetString().c_str());
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "AuctionError, %s is sending %s, but item is already in another auction", pl->GetGuidStr().c_str(), itemGuid.GetString().c_str());
         SendAuctionCommandResult(nullptr, AUCTION_STARTED, AUCTION_ERR_INVENTORY, EQUIP_ERR_ITEM_NOT_FOUND);
         return;
     }
@@ -360,8 +358,9 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
 
     if (GetSecurity() > SEC_PLAYER && sWorld.getConfig(CONFIG_BOOL_GM_LOG_TRADE))
     {
-        sLog.outCommand(GetAccountId(), "GM %s (Account: %u) create auction: %s (Entry: %u Count: %u)",
-                        GetPlayerName(), GetAccountId(), it->GetProto()->Name1, it->GetEntry(), it->GetCount());
+        sLog.Player(GetAccountId(), LOG_GM, LOG_LVL_BASIC, 
+            "GM %s (Account: %u) create auction: %s (Entry: %u Count: %u)",
+            GetPlayerName(), GetAccountId(), it->GetProto()->Name1, it->GetEntry(), it->GetCount());
     }
 
     pl->ModifyMoney(-int32(deposit));
@@ -384,7 +383,7 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
     AH->deposit = deposit;
     AH->auctionHouseEntry = auctionHouseEntry;
 
-    sLog.out(LOG_MONEY_TRADES, "[AuctionHouse]: Player %s listing %s (%u) at auctioneer %s. Initial bid: %u, buyout: %u, duration: %u, auctionhouse: %u",
+    sLog.Player(this, LOG_MONEY_TRADES, LOG_LVL_MINIMAL, "[AuctionHouse]: Player %s listing %s (%u) at auctioneer %s. Initial bid: %u, buyout: %u, duration: %u, auctionhouse: %u",
                 pl->GetShortDescription().c_str(), it->GetGuidStr().c_str(), it->GetEntry(), 
                 auctioneerGuid.GetString().c_str(), bid, buyout, auction_time, AH->GetHouseId());
 
@@ -418,8 +417,6 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
 // this function is called when client bids or buys out auction
 void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
 {
-    DEBUG_LOG("WORLD: HandleAuctionPlaceBid");
-
     ObjectGuid auctioneerGuid;
     uint32 auctionId;
     uint32 price;
@@ -622,13 +619,11 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
 // this void is called when auction_owner cancels his auction
 void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
 {
-    DEBUG_LOG("WORLD: HandleAuctionRemoveItem");
-
     ObjectGuid auctioneerGuid;
     uint32 auctionId;
     recv_data >> auctioneerGuid;
     recv_data >> auctionId;
-    //DEBUG_LOG("Cancel AUCTION AuctionID: %u", auctionId);
+    //sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "Cancel AUCTION AuctionID: %u", auctionId);
 
     AuctionHouseEntry const* auctionHouseEntry = GetCheckedAuctionHouseForAuctioneer(auctioneerGuid);
     if (!auctionHouseEntry)
@@ -669,7 +664,7 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
         }
         else
         {
-            sLog.outError("Auction id: %u has nonexistent item (item guid : %u)!!!", auction->Id, auction->itemGuidLow);
+            sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Auction id: %u has nonexistent item (item guid : %u)!!!", auction->Id, auction->itemGuidLow);
             SendAuctionCommandResult(nullptr, AUCTION_REMOVED, AUCTION_ERR_INVENTORY, EQUIP_ERR_ITEM_NOT_FOUND);
             return;
         }
@@ -678,7 +673,7 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
     {
         SendAuctionCommandResult(nullptr, AUCTION_REMOVED, AUCTION_ERR_DATABASE);
         // this code isn't possible ... maybe there should be ASSERT
-        sLog.outError("CHEATER : %u, he tried to cancel auction (id: %u) of another player, or auction is nullptr", pl->GetGUIDLow(), auctionId);
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "CHEATER : %u, he tried to cancel auction (id: %u) of another player, or auction is nullptr", pl->GetGUIDLow(), auctionId);
         return;
     }
 
@@ -753,7 +748,7 @@ public:
                 }
                 default:
                 {
-                    sLog.outError("[AsyncAuctionQuery] Invalid query type %u", _queryType);
+                    sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "[AsyncAuctionQuery] Invalid query type %u", _queryType);
                     return;
                 }
             }
@@ -771,7 +766,6 @@ public:
 // called when player lists his bids
 void WorldSession::HandleAuctionListBidderItems(WorldPacket& recv_data)
 {
-    DEBUG_LOG("WORLD: HandleAuctionListBidderItems");
     if (ReceivedAHListRequest())
         return;
 
@@ -784,7 +778,7 @@ void WorldSession::HandleAuctionListBidderItems(WorldPacket& recv_data)
     recv_data >> outbiddedCount;
     if (recv_data.size() != (16 + outbiddedCount * 4))
     {
-        sLog.outError("Client sent bad opcode!!! with count: %u and size : %u (must be: %u)", outbiddedCount, (uint32)recv_data.size(), (16 + outbiddedCount * 4));
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Client sent bad opcode!!! with count: %u and size : %u (must be: %u)", outbiddedCount, (uint32)recv_data.size(), (16 + outbiddedCount * 4));
         outbiddedCount = 0;
     }
 
@@ -815,7 +809,6 @@ void WorldSession::HandleAuctionListBidderItems(WorldPacket& recv_data)
 // this void sends player info about his auctions
 void WorldSession::HandleAuctionListOwnerItems(WorldPacket& recv_data)
 {
-    DEBUG_LOG("WORLD: HandleAuctionListOwnerItems");
     if (ReceivedAHListRequest())
         return;
 
@@ -843,7 +836,6 @@ void WorldSession::HandleAuctionListOwnerItems(WorldPacket& recv_data)
 
 void WorldSession::HandleAuctionListItems(WorldPacket& recv_data)
 {
-    DEBUG_LOG("WORLD: HandleAuctionListItems");
     if (ReceivedAHListRequest())
         return;
 
@@ -871,7 +863,7 @@ void WorldSession::HandleAuctionListItems(WorldPacket& recv_data)
     if (GetPlayer()->HasUnitState(UNIT_STAT_FEIGN_DEATH))
         GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
 
-    //DEBUG_LOG("Auctionhouse search %s list from: %u, searchedname: %s, levelmin: %u, levelmax: %u, auctionSlotID: %u, auctionMainCategory: %u, auctionSubCategory: %u, quality: %u, usable: %u",
+    //sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "Auctionhouse search %s list from: %u, searchedname: %s, levelmin: %u, levelmax: %u, auctionSlotID: %u, auctionMainCategory: %u, auctionSubCategory: %u, quality: %u, usable: %u",
     //  auctioneerGuid.GetString().c_str(), listfrom, searchedname.c_str(), levelmin, levelmax, auctionSlotID, auctionMainCategory, auctionSubCategory, quality, usable);
 
     // converting string that we try to find to lower case

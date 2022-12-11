@@ -704,6 +704,7 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOADSPELLCOOLDOWNS,
     PLAYER_LOGIN_QUERY_LOADGUILD,
     PLAYER_LOGIN_QUERY_LOADBGDATA,
+    PLAYER_LOGIN_QUERY_LOADACCOUNTDATA,
     PLAYER_LOGIN_QUERY_LOADSKILLS,
     PLAYER_LOGIN_QUERY_LOADMAILS,
     PLAYER_LOGIN_QUERY_LOADMAILEDITEMS,
@@ -1235,6 +1236,7 @@ class Player final: public Unit
         void SendNotifyLootItemRemoved(uint8 lootSlot) const;
         void SendNotifyLootMoneyRemoved() const;
         bool IsAllowedToLoot(Creature const* creature);
+        float GetMaxLootDistance(Unit const* pUnit) const;
 
         void SendEnchantmentLog(ObjectGuid casterGuid, uint32 itemId, uint32 spellId) const;
         void ApplyEnchantment(Item* item,EnchantmentSlot slot,bool apply, bool apply_dur = true, bool ignore_condition = false);
@@ -1443,6 +1445,7 @@ class Player final: public Unit
         void _SaveBGData();
         void _SaveStats();
         uint32 m_nextSave;
+        bool m_saveDisabled; // used for temporary bots and faction change
     public:
         // Saves a new character directly in the database, without creating a Player object in memory.
         static bool SaveNewPlayer(WorldSession* session, uint32 guidlow, std::string const& name, uint8 raceId, uint8 classId, uint8 gender, uint8 skin, uint8 face, uint8 hairStyle, uint8 hairColor, uint8 facialHair);
@@ -1457,6 +1460,7 @@ class Player final: public Unit
 
         uint32 GetSaveTimer() const { return m_nextSave; }
         void   SetSaveTimer(uint32 timer) { m_nextSave = timer; }
+        bool   IsSavingDisabled() const { return m_saveDisabled; }
 
         /*********************************************************/
         /***                    PET SYSTEM                     ***/
@@ -1494,7 +1498,7 @@ class Player final: public Unit
         void SetTemporaryUnsummonedPetNumber(uint32 petNumber) { m_temporaryUnsummonedPetNumber = petNumber; }
         void UnsummonPetTemporaryIfAny();
         void ResummonPetTemporaryUnSummonedIfAny();
-        bool IsPetNeedBeTemporaryUnsummoned() const { return !IsInWorld() || !IsAlive() || IsMounted() /*+in flight*/; }
+        bool IsPetNeedBeTemporaryUnsummoned() const;
         
         /*********************************************************/
         /***                   SPELL SYSTEM                    ***/
@@ -1505,6 +1509,7 @@ class Player final: public Unit
         float m_auraBaseMod[BASEMOD_END][MOD_END];
         SpellModList m_spellMods[MAX_SPELLMOD];
         uint32 m_lastFromClientCastedSpellID;
+        std::map<uint32, ItemSetEffect> m_itemSetEffects;
         
         bool IsNeedCastPassiveLikeSpellAtLearn(SpellEntry const* spellInfo) const;
         void SendInitialSpells() const;
@@ -1523,9 +1528,14 @@ class Player final: public Unit
         void LearnQuestRewardedSpells();
         void LearnQuestRewardedSpells(Quest const* quest);
         void LearnSpellHighRank(uint32 spellid);
+        uint32 GetSpellRank(SpellEntry const* spellInfo) const final;
 
         void CastItemCombatSpell(Unit* Target, WeaponAttackType attType);
         void CastItemUseSpell(Item* item, SpellCastTargets const& targets);
+
+        ItemSetEffect* GetItemSetEffect(uint32 setId);
+        ItemSetEffect* AddItemSetEffect(uint32 setId);
+        void RemoveItemSetEffect(uint32 setId);
 
         // needed by vanish and improved sap
         void CastHighestStealthRank();
@@ -1574,8 +1584,7 @@ class Player final: public Unit
                     ++spellCDItr;
             }
         }
-
-        std::vector<ItemSetEffect*> m_ItemSetEff;
+        
         uint32 m_castingSpell; // Last spell cast by client, or combo points if player is rogue
 
         /*********************************************************/
@@ -1860,7 +1869,7 @@ class Player final: public Unit
         void UpdateZoneDependentAuras();
         void UpdateAreaDependentAuras();                    // subzones
         void UpdateTerainEnvironmentFlags();
-        void CheckAreaExploreAndOutdoor(void);
+        void CheckAreaExploreAndOutdoor();
     public:
         void AddToWorld() override;
         void RemoveFromWorld() override;
@@ -1924,6 +1933,7 @@ class Player final: public Unit
         bool IsNextRelocationIgnored() const { return m_bNextRelocationsIgnored ? true : false; }
         void SetNextRelocationsIgnoredCount(uint32 count) { m_bNextRelocationsIgnored = count; }
         void DoIgnoreRelocation() { if (m_bNextRelocationsIgnored) --m_bNextRelocationsIgnored; }
+        bool IsOutdoorOnTransport() const;
 
         ObjectGuid const& GetFarSightGuid() const { return GetGuidValue(PLAYER_FARSIGHT); }
 
@@ -1954,7 +1964,7 @@ class Player final: public Unit
         void UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* target);
         template<class T>
         void UpdateVisibilityOf(WorldObject const* viewPoint, T* target, UpdateData& data, std::set<WorldObject*>& visibleNow);
-        void BeforeVisibilityDestroy(Creature* creature);
+        void LeaveCombatWithFarAwayCreatures();
 
         Camera& GetCamera() { return m_camera; }
 
@@ -2036,13 +2046,13 @@ class Player final: public Unit
         void FreezeMirrorTimers(bool state);
         void UpdateMirrorTimers(uint32 diff, bool send = true);
 
-        inline bool CheckMirrorTimerActivation(MirrorTimer::Type timer) const;
-        inline bool CheckMirrorTimerDeactivation(MirrorTimer::Type timer) const;
+        bool CheckMirrorTimerActivation(MirrorTimer::Type timer) const;
+        bool CheckMirrorTimerDeactivation(MirrorTimer::Type timer) const;
 
-        inline void OnMirrorTimerExpirationPulse(MirrorTimer::Type timer);
+        void OnMirrorTimerExpirationPulse(MirrorTimer::Type timer);
 
-        inline uint32 GetMirrorTimerMaxDuration(MirrorTimer::Type timer) const;
-        inline SpellAuraHolder const* GetMirrorTimerBuff(MirrorTimer::Type timer) const;
+        uint32 GetMirrorTimerMaxDuration(MirrorTimer::Type timer) const;
+        SpellAuraHolder const* GetMirrorTimerBuff(MirrorTimer::Type timer) const;
     public:
         bool IsUnderwater() const override { return (m_environmentFlags & ENVIRONMENT_FLAG_UNDERWATER); }
         bool IsInWater() const override { return (m_environmentFlags & ENVIRONMENT_FLAG_IN_WATER); }
@@ -2149,7 +2159,6 @@ class Player final: public Unit
         // Cannot be detected by creature (Should be tested in AI::MoveInLineOfSight)
         void SetCannotBeDetectedTimer(uint32 milliseconds) { m_cannotBeDetectedTimer = milliseconds; };
         bool CanBeDetected() const override { return m_cannotBeDetectedTimer <= 0; }
-        bool IsInCombatWithCreature(Creature const* pCreature);
 
         // PlayerAI management
         PlayerAI* i_AI;
@@ -2337,7 +2346,7 @@ class Player final: public Unit
     private:
         Team m_team;
         ReputationMgr  m_reputationMgr;
-        bool m_DbSaveDisabled; // used for faction change
+        std::set<uint32> m_temporaryAtWarFactions;
     public:
         static Team TeamForRace(uint8 race);
         Team GetTeam() const final { return m_team; }
@@ -2352,6 +2361,8 @@ class Player final: public Unit
         void RewardReputation(Unit* pVictim, float rate);
         void RewardReputation(Quest const* pQuest);
         int32 CalculateReputationGain(ReputationSource source, int32 rep, int32 faction, uint32 creatureOrQuestLevel = 0, bool noAuraBonus = false);
+        void SetTemporaryAtWarWithFaction(uint32 factionId) { m_temporaryAtWarFactions.insert(factionId); }
+        void ClearTemporaryWarWithFactions();
 
         bool ChangeRace(uint8 newRace);
         bool ChangeItemsForRace(uint8 oldRace, uint8 newRace);
@@ -2430,6 +2441,7 @@ class Player final: public Unit
 
         static uint32 GetMinLevelForBattleGroundBracketId(BattleGroundBracketId bracket_id, BattleGroundTypeId bgTypeId);
         static uint32 GetMaxLevelForBattleGroundBracketId(BattleGroundBracketId bracket_id, BattleGroundTypeId bgTypeId);
+        static BattleGroundBracketId GetBattleGroundBracketIdFromLevel(BattleGroundTypeId bgTypeId, uint32 level);
         BattleGroundBracketId GetBattleGroundBracketIdFromLevel(BattleGroundTypeId bgTypeId) const;
 
         bool InBattleGroundQueue() const
@@ -2598,6 +2610,7 @@ class Player final: public Unit
         Group* m_groupInvite;
         uint32 m_groupUpdateMask;
         uint64 m_auraUpdateMask;
+        uint32 m_LFGAreaId;
     public:
         Group* GetGroupInvite() { return m_groupInvite; }
         void SetGroupInvite(Group* group) { m_groupInvite = group; }
@@ -2626,6 +2639,11 @@ class Player final: public Unit
 #if SUPPORTED_CLIENT_BUILD <= CLIENT_BUILD_1_8_4
         uint32 GetWhoListPartyStatus() const;
 #endif
+
+        // LFG
+        void SetLFGAreaId(uint32 areaId) { m_LFGAreaId = areaId; }
+        uint32 GetLFGAreaId() const { return m_LFGAreaId; }
+        bool IsInLFG() const { return m_LFGAreaId > 0; }
 
         // BattleGround Group System
         void SetBattleGroundRaid(Group* group, int8 subgroup = -1);

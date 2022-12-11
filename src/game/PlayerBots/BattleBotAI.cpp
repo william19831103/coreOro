@@ -472,7 +472,7 @@ void BattleBotAI::SendFakePacket(uint16 opcode)
                     data << uint32(529);
                     break;
                 default:
-                    sLog.outError("BattleBot: Invalid BG queue type!");
+                    sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "BattleBot: Invalid BG queue type!");
                     botEntry->requestRemoval = true;
                     return;
             }
@@ -745,14 +745,14 @@ void BattleBotAI::UpdateAI(uint32 const diff)
                     canQueue = ChatHandler(me).HandleGoArathiCommand(args);
                     break;
                 default:
-                    sLog.outError("BattleBot: Invalid BG queue type!");
+                    sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "BattleBot: Invalid BG queue type!");
                     botEntry->requestRemoval = true;
                     return;
             }
 
             if (!canQueue)
             {
-                sLog.outError("BattleBot: Attempt to queue for BG failed! Bot is too low level or BG is not available in this patch.");
+                sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "BattleBot: Attempt to queue for BG failed! Bot is too low level or BG is not available in this patch.");
                 botEntry->requestRemoval = true;
                 return;
             }
@@ -2855,6 +2855,18 @@ void BattleBotAI::UpdateInCombatAI_Druid()
                    return;
            }
        }
+
+        if (m_spells.druid.pRemoveCurse)
+        {
+            if (Unit* pFriend = SelectDispelTarget(m_spells.druid.pRemoveCurse))
+            {
+                if (CanTryToCastSpell(pFriend, m_spells.druid.pRemoveCurse))
+                {
+                    if (DoCastSpell(pFriend, m_spells.druid.pRemoveCurse) == SPELL_CAST_OK)
+                        return;
+                }
+            }
+        }
 
         if (m_spells.druid.pInnervate &&
             me->GetVictim() &&

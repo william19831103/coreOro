@@ -32,6 +32,7 @@ class Spell;
 class Unit;
 class WorldObject;
 class SpellEntry;
+class SpellCaster;
 
 namespace Spells
 {
@@ -984,6 +985,11 @@ class SpellEntry
                 !HasAttribute(SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT));
         }
 
+        inline bool IsNeedCastSpellAtOutdoor() const
+        {
+            return (HasAttribute(SPELL_ATTR_OUTDOORS_ONLY) && HasAttribute(SPELL_ATTR_PASSIVE));
+        }
+
         // Spell effects require a specific power type on the target
         bool IsTargetPowerTypeValid(Powers powerType) const
         {
@@ -1055,7 +1061,7 @@ class SpellEntry
         int32 GetDuration() const;
         int32 GetMaxDuration() const;
         int32 CalculateDuration(WorldObject const* caster = nullptr) const;
-        uint32 GetCastTime(Spell* spell = nullptr) const;
+        uint32 GetCastTime(SpellCaster const* caster, Spell* spell = nullptr) const;
         uint32 GetCastTimeForBonus(DamageEffectType damagetype) const;
         uint16 GetAuraMaxTicks() const;
         WeaponAttackType GetWeaponAttackType() const;
