@@ -150,7 +150,7 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
                 // spells on yourself is frequently used within the core itself for certain mechanics.
                 ((explicitlySelectedTarget && !spellInfo->IsPositiveSpell(pCharmedUnit, pUnitTarget)) ||
                 // spells not castable on self like Fire Shield
-                spellInfo->HasAttribute(SPELL_ATTR_EX_CANT_TARGET_SELF)))
+                spellInfo->HasAttribute(SPELL_ATTR_EX_EXCLUDE_CASTER)))
             {
                 pCharmedUnit->SendPetCastFail(spellid, SPELL_FAILED_BAD_TARGETS);
                 return;
@@ -490,7 +490,7 @@ void WorldSession::HandlePetSpellAutocastOpcode(WorldPacket& recvPacket)
     }
 
     // do not add not learned spells/ passive spells
-    if (!pet->HasSpell(spellid) || Spells::IsPassiveSpell(spellid))
+    if (!pet->HasSpell(spellid) || !Spells::IsAutocastable(spellid))
         return;
 
     CharmInfo* charmInfo = pet->GetCharmInfo();
