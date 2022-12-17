@@ -90,7 +90,7 @@ uint16 DummyItemLevel(Player* pPlayer)
         if (equippedItem)
         {
             uint32 itemId = equippedItem->GetEntry();
-            ItemPrototype const* item_proto = ObjectMgr::GetItemPrototype(itemId);
+            ItemPrototype const* item_proto = sObjectMgr.GetItemPrototype(itemId);
             if (item_proto->ItemLevel)
             {
                 ilevel = ilevel + item_proto->ItemLevel;
@@ -198,7 +198,7 @@ bool HasForbiddenItem(Player* pPlayer)
             std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("SELECT item FROM auctionhousebot WHERE item = '%u';", equippedItem->GetEntry())); // All allowed items are in this table!
             if (!result)
             {
-                ItemPrototype const* item_proto = ObjectMgr::GetItemPrototype(equippedItem->GetEntry());
+                ItemPrototype const* item_proto = sObjectMgr.GetItemPrototype(equippedItem->GetEntry());
                 if (item_proto)
                 {
                     std::ostringstream ss;
@@ -279,7 +279,7 @@ void SaveScoreboardDB(Player* pPlayer, uint32 dps, uint32 damage, uint32 time, u
             uint32 itemId = equippedItem->GetEntry();
             uint32 item_enchant_Id = GetEnchantID(pPlayer, i);
             //uint32 item_enchant_Id = equippedItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT);
-            ItemPrototype const* item_proto = ObjectMgr::GetItemPrototype(itemId);
+            ItemPrototype const* item_proto = sObjectMgr.GetItemPrototype(itemId);
 
             std::string itemName = item_proto->Name1;
             std::string enchantName;
@@ -386,16 +386,16 @@ void SaveScoreboardDB(Player* pPlayer, uint32 dps, uint32 damage, uint32 time, u
     patch = sWorld.GetWowPatch();
 
     if (!dps)
-        sLog.outBasic("[SaveScoreboardDB] no dps");
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "[SaveScoreboardDB] no dps");
 
     if (!damage)
-        sLog.outBasic("[SaveScoreboardDB] no damage");
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "[SaveScoreboardDB] no damage");
 
     if (!patch)
-        sLog.outBasic("[SaveScoreboardDB] no patch");
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "[SaveScoreboardDB] no patch");
 
     if (!time)
-        sLog.outBasic("[SaveScoreboardDB] no time");
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "[SaveScoreboardDB] no time");
 
     CharacterDatabase.PExecute("INSERT INTO attack_dummy_ranking (`character_guid`, `name`, `class`, `gender`, `race`, `spec`, `item_level`, `dps`, `damage_done`, `equipment_used`, `talents_used`, `auras_used`, `patch`, `vaelmode`, `mode`, `time`, `date`) VALUES ('%u', '%s', '%u', '%u', '%u', '%s', '%u', '%u', '%u', '%s', '%s', '%s', '%u', '%u', '%u', '%u', NOW());", pPlayer->GetGUID(), pPlayer->GetName(), pPlayer->GetClass(), pPlayer->GetGender(), pPlayer->GetRace(), pPlayer->GetSpecNameByTalentPoints().c_str(), DummyItemLevel(pPlayer), dps, damage, (GearOutputStream.str().c_str()), (TalentsOutputStream.str().c_str()), (AurasOutputStream.str().c_str()), patch, vaelmode, mode, time);
 }

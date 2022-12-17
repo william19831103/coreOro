@@ -156,7 +156,7 @@ bool EnchantItem(Player* pPlayer, GameObject* pGameObject, uint32 spellid, uint8
     if (!pItem)
         return false;
 
-    ItemPrototype const* itemProto = ObjectMgr::GetItemPrototype(pItem->GetEntry());
+    ItemPrototype const* itemProto = sObjectMgr.GetItemPrototype(pItem->GetEntry());
     if (!itemProto)
         return false;
 
@@ -301,7 +301,7 @@ bool GossipHello_EnchanterNPC(Player* pPlayer, GameObject* pGameObject)
         if (equippedItem)
         {
             uint32 itemId = equippedItem->GetEntry();
-            ItemPrototype const* itemProto = ObjectMgr::GetItemPrototype(itemId);
+            ItemPrototype const* itemProto = sObjectMgr.GetItemPrototype(itemId);
 
             if (equippedItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT))
                 GOSSIP_ICON_SET = GOSSIP_ICON_TAXI;
@@ -521,7 +521,7 @@ bool GossipHello_PoisoneerNPC(Player* pPlayer, GameObject* pGameObject)
         if (equippedItem)
         {
             uint32 itemId = equippedItem->GetEntry();
-            ItemPrototype const* itemProto = ObjectMgr::GetItemPrototype(itemId);
+            ItemPrototype const* itemProto = sObjectMgr.GetItemPrototype(itemId);
 
             if (!itemProto)
                 continue;
@@ -697,7 +697,7 @@ bool GossipHello_PropertyNPC(Player* pPlayer, GameObject* pGameObject)
             continue;
 
         uint32 itemId = equippedItem->GetEntry();
-        ItemPrototype const* itemProto = ObjectMgr::GetItemPrototype(itemId);
+        ItemPrototype const* itemProto = sObjectMgr.GetItemPrototype(itemId);
 
         if (!itemProto)
             continue;
@@ -840,7 +840,7 @@ bool GossipSelect_PropertyNPC(Player* pPlayer, GameObject* pGameObject, uint32 u
 
         uint32 itemId = equippedItem->GetEntry();
 
-        ItemPrototype const* itemProto = ObjectMgr::GetItemPrototype(itemId);
+        ItemPrototype const* itemProto = sObjectMgr.GetItemPrototype(itemId);
 
         if (!itemProto)
             return false;

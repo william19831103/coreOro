@@ -978,7 +978,7 @@ void Player::AddStartingItems()
 
 bool Player::StoreNewItemInBestSlots(uint32 titem_id, uint32 titem_amount, uint32 enchantId, uint32 propertyId)
 {
-    sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "STORAGE: Creating initial item, itemId = %u, count = %u", itemId, amount);
+    sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "STORAGE: Creating initial item, itemId = %u, count = %u", titem_id, titem_amount);
 
     // attempt equip by one
     while (titem_amount > 0)
@@ -1046,7 +1046,7 @@ bool Player::StoreNewItemInBestSlots(uint32 titem_id, uint32 titem_amount, uint3
     }
 
     // item can't be added
-    sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "STORAGE: Can't equip or store initial item %u for race %u class %u , error msg = %u", itemId, GetRace(), GetClass(), msg);
+    sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "STORAGE: Can't equip or store initial item %u for race %u class %u , error msg = %u", titem_id, GetRace(), GetClass(), msg);
     return false;
 }
 
@@ -11786,7 +11786,7 @@ float AverageItemLevelBG(Player* player)
         if (equippedItem)
         {
             uint32 itemId = equippedItem->GetEntry();
-            ItemPrototype const* item_proto = ObjectMgr::GetItemPrototype(itemId);
+            ItemPrototype const* item_proto = sObjectMgr.GetItemPrototype(itemId);
             if (item_proto->ItemLevel)
             {
                 ilevel = ilevel + item_proto->ItemLevel;

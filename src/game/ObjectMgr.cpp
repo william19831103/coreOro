@@ -11748,7 +11748,7 @@ void ObjectMgr::ApplyPremadeSpecTemplateToPlayer(uint32 entry, Player* pPlayer) 
 void ObjectMgr::LoadDisabledArenaSpells()
 {
 	{
-		sLog.outString("Loading player disabled arena spells ...");
+        sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "Loading player disabled arena spells ...");
 		m_disabledArenaSpellsMap.clear();
 
 		//                                                               0        1
@@ -11759,7 +11759,7 @@ void ObjectMgr::LoadDisabledArenaSpells()
 			BarGoLink bar(1);
 			bar.step();
 
-			sLog.outString(">> Loaded 0 disabled arena spells. DB table `disabled_arena_spells` is empty.");
+            sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded 0 disabled arena spells. DB table `disabled_arena_spells` is empty.");
 			return;
 		}
 
@@ -11785,15 +11785,14 @@ void ObjectMgr::LoadDisabledArenaSpells()
 
 		} while (result->NextRow());
 
-		sLog.outString(">> Loaded " SIZEFMTD " disabled arena spells", m_disabledArenaSpellsMap.size());
-		sLog.outString();
+        sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded " SIZEFMTD " disabled arena spells", m_disabledArenaSpellsMap.size());
 	}
 }
 
 void ObjectMgr::LoadGearTemplates()
 {
     {
-        sLog.outString("Loading Template gear templates ...");
+        sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "Loading Template gear templates ...");
         m_TemplateGearMap.clear();
 
         std::unique_ptr<QueryResult> result(CharacterDatabase.Query("SELECT temp_id FROM template_npc_gear GROUP BY temp_id"));
@@ -11803,7 +11802,7 @@ void ObjectMgr::LoadGearTemplates()
             BarGoLink bar(1);
             bar.step();
 
-            sLog.outString(">> Loaded 0 premade player templates. DB table `template_npc_gear` is empty.");
+            sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded 0 premade player templates. DB table `template_npc_gear` is empty.");
             return;
         }
 
@@ -11821,12 +11820,11 @@ void ObjectMgr::LoadGearTemplates()
 
         } while (result->NextRow());
 
-        sLog.outString(">> Loaded " SIZEFMTD " Template gear templates", m_TemplateGearMap.size());
-        sLog.outString();
+        sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded " SIZEFMTD " Template gear templates", m_TemplateGearMap.size());
     }
 
     {
-        sLog.outString("Loading Template items ...");
+        sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "Loading Template items ...");
 
         std::unique_ptr<QueryResult> result(CharacterDatabase.Query("SELECT temp_id, item_entry, item_entry_human, item_entry_orc, item_entry_dwarf, item_entry_troll, item_enchant, randomPropertyId FROM template_npc_gear"));
 
@@ -11835,7 +11833,7 @@ void ObjectMgr::LoadGearTemplates()
             BarGoLink bar(1);
             bar.step();
 
-            sLog.outString(">> Loaded 0 Template items. DB table `template_npc_gear` is empty.");
+            sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded 0 Template items. DB table `template_npc_gear` is empty.");
             return;
         }
 
@@ -11859,7 +11857,7 @@ void ObjectMgr::LoadGearTemplates()
             auto itr = m_TemplateGearMap.find(temp_id);
             if (itr == m_TemplateGearMap.end())
             {
-                sLog.outErrorDb("Wrong entry %u in table `template_npc_gear`", temp_id);
+                sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Wrong entry %u in table `template_npc_gear`", temp_id);
                 continue;
             }
 
@@ -11872,12 +11870,11 @@ void ObjectMgr::LoadGearTemplates()
             itr->second.items.emplace_back(item_entry, item_entry_human, item_entry_orc, item_entry_dwarf, item_entry_troll, item_enchant, item_property_Id);
         } while (result->NextRow());
 
-        sLog.outString(">> Loaded %u Template items", count);
-        sLog.outString();
+        sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded %u Template items", count);
     }
 
     {
-        sLog.outString("Loading template spells ...");
+        sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "Loading template spells ...");
 
         std::unique_ptr<QueryResult> result(CharacterDatabase.Query("SELECT temp_id, talent_id FROM template_npc_talents"));
 
@@ -11886,7 +11883,7 @@ void ObjectMgr::LoadGearTemplates()
             BarGoLink bar(1);
             bar.step();
 
-            sLog.outString(">> Loaded 0 template spells. DB table `template_npc_talents` is empty.");
+            sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded 0 template spells. DB table `template_npc_talents` is empty.");
             return;
         }
 
@@ -11904,7 +11901,7 @@ void ObjectMgr::LoadGearTemplates()
             auto itr = m_TemplateGearMap.find(temp_id);
             if (itr == m_TemplateGearMap.end())
             {
-                sLog.outErrorDb("Wrong entry %u in table `template_npc_talents`", temp_id);
+                sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Wrong entry %u in table `template_npc_talents`", temp_id);
                 continue;
             }
 
@@ -11915,8 +11912,7 @@ void ObjectMgr::LoadGearTemplates()
             //itr->sec.spells.push_back(spell_id);
         } while (result->NextRow());
 
-        sLog.outString(">> Loaded %u premade player spells", count);
-        sLog.outString();
+        sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded %u premade player spells", count);
     }
 }
 
@@ -11925,7 +11921,7 @@ void ObjectMgr::ApplyTemplateGearToPlayer(uint32 temp_id, Player* pPlayer) const
     auto itr = m_TemplateGearMap.find(temp_id);
     if (itr == m_TemplateGearMap.end())
     {
-        sLog.outError("Attempt to apply non-existent premade template to player (%u)", temp_id);
+        sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "Attempt to apply non-existent premade template to player (%u)", temp_id);
         return;
     }
 

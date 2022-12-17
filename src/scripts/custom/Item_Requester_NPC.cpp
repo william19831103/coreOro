@@ -54,7 +54,7 @@ bool OnGossipSelectCode_Item_Requester_NPC(Player* player, Creature* creature, u
                     return false;
                 }
 
-                ItemPrototype const* item_proto = ObjectMgr::GetItemPrototype(itemId);
+                ItemPrototype const* item_proto = sObjectMgr.GetItemPrototype(itemId);
 
                 if (!item_proto)
                 {

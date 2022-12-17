@@ -64,10 +64,10 @@ bool Arena::SummonTornado()
     uint32 remaintime = urand(45000, 60000);
 
     if (Creature* tornado = GetBgMap()->SummonCreature(NPC_TORNADO, x, y, z, angle - M_PI, TEMPSUMMON_MANUAL_DESPAWN, true))
-        sLog.outBasic("[Arena:SummonTornado] summoned tornado 1 on arena map %d for %d", GetBgMap()->GetInstanceId(), remaintime);
+        sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "[Arena:SummonTornado] summoned tornado 1 on arena map %d for %d", GetBgMap()->GetInstanceId(), remaintime);
     else
     {
-        sLog.outBasic("[Arena:SummonTornado] invalid position for tornado 1, retry in 2 seconds", GetBgMap()->GetInstanceId());
+        sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "[Arena:SummonTornado] invalid position for tornado 1, retry in 2 seconds", GetBgMap()->GetInstanceId());
         return false;
     }
 

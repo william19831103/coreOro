@@ -727,17 +727,17 @@ void StashBuffingFromDB(Player* pPlayer, uint32 temp_id)
             if (spellInfo->spellLevel > pPlayer->GetLevel())
                 continue;
 
-            for (uint32 i = 1; i < sItemStorage.GetMaxEntry(); ++i)
+            for (auto const& itr : sObjectMgr.GetItemPrototypeMap())
             {
-                ItemPrototype const* proto = sItemStorage.LookupEntry<ItemPrototype >(i);
+                ItemPrototype const* pProto = &itr.second;
 
-                if (!proto)
+                if (!pProto)
                     continue;
 
                 for (uint8 j = 0; j < MAX_ITEM_PROTO_SPELLS; ++j)
                 {
-                    if (spellID == proto->Spells[j].SpellId)
-                        if (pPlayer->GetLevel() < proto->RequiredLevel)
+                    if (spellID == pProto->Spells[j].SpellId)
+                        if (pPlayer->GetLevel() < pProto->RequiredLevel)
                             continue;
                 }
             }
@@ -757,7 +757,7 @@ void StashBuffingFromDB(Player* pPlayer, uint32 temp_id)
                     pHolder->SetCasterGuid(NULL);
             }
             else
-                sLog.outBasic("[ApplyAura] spell %s not applied.", spellInfo->SpellName);
+                sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "[ApplyAura] spell %s not applied.", spellInfo->SpellName);
 
         } while (select->NextRow());
         delete select;
@@ -966,7 +966,7 @@ bool StashEquipItemsFromDB(Player* pPlayer, uint32 temp_id)
         uint32 itemEntry = fields[0].GetUInt32();
         uint32 enchant = fields[1].GetUInt32();
 
-        ItemPrototype const* item_proto = ObjectMgr::GetItemPrototype(itemEntry);
+        ItemPrototype const* item_proto = sObjectMgr.GetItemPrototype(itemEntry);
 
         if (!item_proto)
             continue;

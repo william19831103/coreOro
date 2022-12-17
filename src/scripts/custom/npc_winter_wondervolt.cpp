@@ -73,18 +73,18 @@ void ApplyAura(Unit* pUnit, uint32 spellId)
     if (spellInfo->spellLevel > pUnit->GetLevel())
         return;
 
-    for (uint32 i = 1; i < sItemStorage.GetMaxEntry(); ++i)
+    for (auto const& itr : sObjectMgr.GetItemPrototypeMap())
     {
-        ItemPrototype const* proto = sItemStorage.LookupEntry<ItemPrototype >(i);
+        ItemPrototype const* pProto = &itr.second;
 
-        if (!proto)
+        if (!pProto)
             continue;
 
         for (uint8 j = 0; j < MAX_ITEM_PROTO_SPELLS; ++j)
         {
-            if (spellId == proto->Spells[j].SpellId)
+            if (spellId == pProto->Spells[j].SpellId)
             {
-                if (pUnit->GetLevel() < proto->RequiredLevel)
+                if (pUnit->GetLevel() < pProto->RequiredLevel)
                     return;
             }
         }
@@ -105,7 +105,7 @@ void ApplyAura(Unit* pUnit, uint32 spellId)
             pHolder->SetCasterGuid(NULL);
     }
     else
-        sLog.outBasic("[ApplyAura] spell %d not applied.", spellInfo->SpellName);
+        sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "[ApplyAura] spell %d not applied.", spellInfo->SpellName);
 
     // Remove all talents again.
     for (uint32 i = 0; i < 8; ++i) {

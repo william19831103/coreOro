@@ -183,11 +183,11 @@ void AuctionHouseBotMgr::AddItem(AuctionHouseBotEntry e, AuctionHouseObject *auc
     }
     */
 
-    ItemPrototype const* item_proto = ObjectMgr::GetItemPrototype(item->GetEntry());
+    ItemPrototype const* item_proto = sObjectMgr.GetItemPrototype(item->GetEntry());
 
     if (!item_proto)
     {
-        sLog.outInfo("AHBot::AddItem() : item not exist.");
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "AHBot::AddItem() : item not exist.");
         return;
     }
 

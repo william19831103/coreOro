@@ -218,7 +218,7 @@ uint16 AverageItemLevel(Player* pPlayer)
         if (equippedItem)
         {
             uint32 itemId = equippedItem->GetEntry();
-            ItemPrototype const* item_proto = ObjectMgr::GetItemPrototype(itemId);
+            ItemPrototype const* item_proto = sObjectMgr.GetItemPrototype(itemId);
             if (item_proto->ItemLevel)
             {
                 ilevel = ilevel + item_proto->ItemLevel;
@@ -513,7 +513,7 @@ std::string DefineMainHand(Player* pPlayer)
     if (MainHandItem)
     {
         uint32 itemId = MainHandItem->GetEntry();
-        ItemPrototype const* item_proto = ObjectMgr::GetItemPrototype(itemId);
+        ItemPrototype const* item_proto = sObjectMgr.GetItemPrototype(itemId);
 
         switch (item_proto->InventoryType)
         {
@@ -559,7 +559,7 @@ std::string DefineOffHand(Player* pPlayer)
     if (OffHandItem)
     {
         uint32 itemId = OffHandItem->GetEntry();
-        ItemPrototype const* item_proto = ObjectMgr::GetItemPrototype(itemId);
+        ItemPrototype const* item_proto = sObjectMgr.GetItemPrototype(itemId);
 
         switch (item_proto->InventoryType)
         {
@@ -1691,7 +1691,7 @@ void perform_npc_vendor_template()
 
             if (entry)
             {
-                if (ItemPrototype const* alliance_id_proto = ObjectMgr::GetItemPrototype(entry))
+                if (ItemPrototype const* alliance_id_proto = sObjectMgr.GetItemPrototype(entry))
                     alliance_id_name = alliance_id_proto->Name1;
 
                 QueryResult *founditem = WorldDatabase.PQuery("SELECT alliance_id FROM player_factionchange_items WHERE alliance_id='%u'", entry);
@@ -1724,10 +1724,10 @@ void perform_player_factionchange_items()
 
             if (alliance_id && horde_id)
             {
-                if (ItemPrototype const* alliance_id_proto = ObjectMgr::GetItemPrototype(alliance_id))
+                if (ItemPrototype const* alliance_id_proto = sObjectMgr.GetItemPrototype(alliance_id))
                     alliance_id_name = alliance_id_proto->Name1;
 
-                if (ItemPrototype const* horde_id_proto = ObjectMgr::GetItemPrototype(horde_id))
+                if (ItemPrototype const* horde_id_proto = sObjectMgr.GetItemPrototype(horde_id))
                     horde_id_name = horde_id_proto->Name1;
 
                 std::replace(alliance_id_name.begin(), alliance_id_name.end(), '\'', '\''); // replace quotes or Server sql will crash.
@@ -1760,7 +1760,7 @@ void sTemplateNPC::LoadTalentsContainer()
 
     if (!result)
     {
-        sLog.outError(">> Loaded 0 talent templates. DB table `template_npc_talents` is empty!");
+        sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, ">> Loaded 0 talent templates. DB table `template_npc_talents` is empty!");
         return;
     }
 
@@ -1778,7 +1778,7 @@ void sTemplateNPC::LoadTalentsContainer()
         m_TemplateNpcTalentsMap.push_back(pTalent);
         ++count;
     } while (result->NextRow());
-    sLog.outString(">> Loaded %u talent templates.", count);
+    sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded %u talent templates.", count);
 }
 
 void ExtractGearTemplateToDB(Player* pPlayer, std::string& gossipTempText)
@@ -1900,7 +1900,7 @@ bool LearnAllRecipesProfession(Player *pPlayer, SkillType skill)
 
     if (!SkillInfo)
     {
-        sLog.outError("Profession NPC: received non-valid skill ID");
+        sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Profession NPC: received non-valid skill ID");
         return false;
     }
 
@@ -2021,7 +2021,7 @@ void ResetPetFromPlayer(Player* pPlayer)
     CharmInfo* charmInfo = pet->GetCharmInfo();
     if (!charmInfo)
     {
-        sLog.outError("WorldSession::HandlePetUnlearnOpcode: %s is considered pet-like but doesn't have a charminfo!", pet->GetGuidStr().c_str());
+        sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "WorldSession::HandlePetUnlearnOpcode: %s is considered pet-like but doesn't have a charminfo!", pet->GetGuidStr().c_str());
         return;
     }
 
@@ -2098,7 +2098,7 @@ void CreateHunterPet(Player* pPlayer, Creature* pCreature, uint32 entry)
 
         if (!pet->InitStatsForLevel(pPlayer->GetLevel()))
         {
-            sLog.outError("Pet::InitStatsForLevel() failed for creature (Entry: %u)!", pBeast->GetEntry());
+            sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Pet::InitStatsForLevel() failed for creature (Entry: %u)!", pBeast->GetEntry());
             delete pet;
             return;
         }
@@ -2235,14 +2235,14 @@ void LearnAllTrainerSpells(Player* pPlayer, uint32 TrainerID)
     }
     else
     {
-        sLog.outBasic("[UterusOne::LearnAllTrainerSpells] No TrainerSpellData for %u", TrainerID);
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "[UterusOne::LearnAllTrainerSpells] No TrainerSpellData for %u", TrainerID);
         return;
     }
 
     // Repeat until player learned all spells.
     if (!AllSpellsKnown)
     {
-        sLog.outBasic("[UterusOne::LearnAllTrainerSpells] !AllSpellsKnown");
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "[UterusOne::LearnAllTrainerSpells] !AllSpellsKnown");
         LearnAllTrainerSpells(pPlayer, TrainerID);
     }
     else
@@ -2497,7 +2497,7 @@ void EquipItemsFromDB(Player* pPlayer, uint32 temp_id)
         if (pPlayer->GetRace() == RACE_TROLL && item_entry_troll > 0)
             item_entry = item_entry_troll;
 
-        if (ItemPrototype const* pItem = ObjectMgr::GetItemPrototype(item_entry))
+        if (ItemPrototype const* pItem = sObjectMgr.GetItemPrototype(item_entry))
         {
             if (pItem->MaxCount)
                 pPlayer->DeleteItemInBag(item_entry);
@@ -3295,7 +3295,7 @@ bool GossipStart_TemplateNPC(Player* pPlayer, Creature* pCreature, uint32 uiActi
                 Field* fields = result->Fetch();
                 uint32 entry = fields[0].GetUInt32();
 
-                ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(entry);
+                ItemPrototype const* pProto = sObjectMgr.GetItemPrototype(entry);
                 if (pProto)
                 {
                     // Only item with level 0 and BoP / Quest items.
@@ -3821,7 +3821,7 @@ void EquipBestInSlot(Player* pPlayer)
                 pPlayer->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
             }
 
-            ItemPrototype const* item_proto = ObjectMgr::GetItemPrototype(nSlot->GetEntry());
+            ItemPrototype const* item_proto = sObjectMgr.GetItemPrototype(nSlot->GetEntry());
             if (item_proto->ItemLevel)
 
             std::unique_ptr<QueryResult> nItem(WorldDatabase.PQuery("SELECT * FROM item_template WHERE required_level =< '%u' AND allowable_class = '%u' AND inventory_type = '%u';", pPlayer->GetLevel(), pPlayer->GetClassMask()));

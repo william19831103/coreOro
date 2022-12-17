@@ -1086,7 +1086,7 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, BattleGroundBracketI
                 BattleGround* bg2 = sBattleGroundMgr.CreateNewBattleGround(bgTypeId, bracketId);
                 if (!bg2)
                 {
-                    sLog.outError("BattleGroundQueue::Update - Cannot create battleground: %u", bgTypeId);
+                    sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "BattleGroundQueue::Update - Cannot create battleground: %u", bgTypeId);
                     return;
                 }
 

@@ -19,6 +19,7 @@
 #include "ScriptedAI.h"
 #include "Bag.h"
 #include "Group.h"
+#include "Item.h"
 #include <ctime>
 #include "Arena.h"
 #include "BattleGround.h"
@@ -609,7 +610,7 @@ bool JoinQueueArena(Player* pPlayer, GameObject* pGameObject, uint8 bgTypeid)
         // if we're here, then the conditions to join a bg are met. We can proceed in joining.
 
         BattleGroundQueue& bgQueue = sBattleGroundMgr.m_battleGroundQueues[BgQueueTypeId];
-        DEBUG_LOG("Battleground: the following players are joining as group:");
+        // DEBUG_LOG("Battleground: the following players are joining as group:");
         GroupQueueInfo* ginfo = bgQueue.AddGroup(pPlayer, grp, bgTypeID, bracketEntry, isPremade, 0, &excludedMembers);
         uint32 avgTime = bgQueue.GetAverageQueueWaitTime(ginfo, bracketEntry);
         for (GroupReference* itr = grp->GetFirstMember(); itr != NULL; itr = itr->next())
@@ -637,9 +638,9 @@ bool JoinQueueArena(Player* pPlayer, GameObject* pGameObject, uint8 bgTypeid)
             member->GetSession()->SendPacket(&data);
             sBattleGroundMgr.BuildGroupJoinedBattlegroundPacket(&data, bg->GetMapId());
             member->GetSession()->SendPacket(&data);
-            DEBUG_LOG("Battleground: player joined queue for bg queue type %u bg type %u: GUID %u, NAME %s", BgQueueTypeId, bgTypeID, member->GetGUIDLow(), member->GetName());
+            // DEBUG_LOG("Battleground: player joined queue for bg queue type %u bg type %u: GUID %u, NAME %s", BgQueueTypeId, bgTypeID, member->GetGUIDLow(), member->GetName());
         }
-        DEBUG_LOG("Battleground: group end");
+        // DEBUG_LOG("Battleground: group end");
     }
 
     sBattleGroundMgr.ScheduleQueueUpdate(BgQueueTypeId, bgTypeID, bracketEntry);
@@ -1699,7 +1700,7 @@ void CompareCreatureTemplateDBs()
 
             ss << "WHERE `entry`='" << entry << "';";
 
-            sLog.outBasic(ss.str().c_str());
+            sLog.Out(LOG_BASIC, LOG_LVL_ERROR, ss.str().c_str());
 
         } while (result->NextRow());
 
@@ -3210,7 +3211,7 @@ bool CheckQuestItemLevels(Player* pPlayer)
             Field* fields = result->Fetch();
             uint32 entry = fields[0].GetUInt32();
 
-            ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(entry);
+            ItemPrototype const* pProto = sObjectMgr.GetItemPrototype(entry);
             if (pProto)
             {
                 // Only item with level 0 and BoP / Quest items.
@@ -3286,7 +3287,7 @@ void FixQuestItemLevels(Player* pPlayer)
             Field* fields = result->Fetch();
             uint32 entry = fields[0].GetUInt32();
     
-            ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(entry);
+            ItemPrototype const* pProto = sObjectMgr.GetItemPrototype(entry);
             if (pProto)
             {
                 // Only item with level 0 and BoP / Quest items.

@@ -461,7 +461,7 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         if (!pItem)
             return;
 
-        ItemPrototype const* item_proto = ObjectMgr::GetItemPrototype(pItem->GetEntry());
+        ItemPrototype const* item_proto = sObjectMgr.GetItemPrototype(pItem->GetEntry());
         ItemPrototype const* new_item_proto = nullptr;
 
         if (!item_proto)
@@ -478,9 +478,9 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
             uint32 horde_id = fields[1].GetUInt32();
 
             if (pl->GetTeam() == ALLIANCE && alliance_id)
-                new_item_proto = ObjectMgr::GetItemPrototype(alliance_id);
+                new_item_proto = sObjectMgr.GetItemPrototype(alliance_id);
             if (pl->GetTeam() == HORDE && horde_id)
-                new_item_proto = ObjectMgr::GetItemPrototype(horde_id);
+                new_item_proto = sObjectMgr.GetItemPrototype(horde_id);
         }
 
         if (new_item_proto)
