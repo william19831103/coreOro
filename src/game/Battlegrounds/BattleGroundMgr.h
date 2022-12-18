@@ -59,6 +59,7 @@ struct GroupQueueInfo                                       // stores informatio
     uint32  removeInviteTime;                               // time when we will remove invite for players in group
     uint32  isInvitedToBgInstanceGuid;                      // was invited to certain BG
     uint32  desiredInstanceId;                              // queued for this instance specifically
+    uint32  bracketId;                                      // queued for this instance specifically
 };
 
 enum BattleGroundQueueGroupTypes
@@ -66,9 +67,10 @@ enum BattleGroundQueueGroupTypes
     BG_QUEUE_PREMADE_ALLIANCE   = 0,
     BG_QUEUE_PREMADE_HORDE      = 1,
     BG_QUEUE_NORMAL_ALLIANCE    = 2,
-    BG_QUEUE_NORMAL_HORDE       = 3
+    BG_QUEUE_NORMAL_HORDE       = 3,
+    BG_QUEUE_MIXED              = 4
 };
-#define BG_QUEUE_GROUP_TYPES_COUNT 4
+#define BG_QUEUE_GROUP_TYPES_COUNT 5
 
 enum BattleGroundGroupJoinStatus
 {
@@ -86,9 +88,14 @@ class BattleGroundQueue
 
         void Update(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracketId);
 
-        void FillPlayersToBg(BattleGround* bg, BattleGroundBracketId bracketId);
+        void FillPlayersToBG(BattleGround* bg, BattleGroundBracketId bracketId);
         bool CheckPremadeMatch(BattleGroundBracketId bracketId, uint32 maxPlayersPerTeam, uint32 minPlayersPerTeam);
         bool CheckNormalMatch(BattleGroundBracketId bracketId, uint32 minPlayers, uint32 maxPlayers);
+        bool FillXPlayersToBG(BattleGroundBracketId bracketId, BattleGround* bg, bool start = false);
+        typedef std::multimap<int32, GroupQueueInfo*> QueuedGroupMap;
+        bool CheckCrossFactionMatch(BattleGroundBracketId bracketId, BattleGround* bg);
+        bool CheckSkirmishForSameFaction(BattleGroundBracketId bracketId, uint32 minPlayersPerTeam);
+        void LeaveQueue(Player* player, BattleGroundTypeId ThebgTypeId);
         GroupQueueInfo* AddGroup(Player* leader, Group* group, BattleGroundTypeId bgTypeId, BattleGroundBracketId bracketId, bool isPremade, uint32 instanceId, std::vector<uint32>* excludedMembers);
         void RemovePlayer(ObjectGuid guid, bool decreaseInvitedCount);
         void PlayerInvitedToBgUpdateAverageWaitTime(GroupQueueInfo* ginfo, BattleGroundBracketId bracketId);
@@ -220,9 +227,10 @@ class BattleGroundMgr
 
         uint32 CreateBattleGround(BattleGroundTypeId bgTypeId, uint32 minPlayersPerTeam, uint32 maxPlayersPerTeam, uint32 levelMin, uint32 levelMax, uint32 allianceWinSpell, uint32 allianceLoseSpell, uint32 hordeWinSpell, uint32 hordeLoseSpell, char const* battleGroundName, uint32 mapID, float team1StartLocX, float team1StartLocY, float team1StartLocZ, float team1StartLocO, float team2StartLocX, float team2StartLocY, float team2StartLocZ, float team2StartLocO, uint32 playerSkinReflootId);
 
-        void AddBattleGround(uint32 instanceId, BattleGroundTypeId bgTypeId, BattleGround* bg) { m_battleGrounds[bgTypeId][instanceId] = bg; };
+        void AddBattleGround(uint32 InstanceID, BattleGroundTypeId bgTypeId, BattleGround* bg) { m_battleGrounds[bgTypeId][InstanceID] = bg; };
         void RemoveBattleGround(uint32 instanceID, BattleGroundTypeId bgTypeId) { m_battleGrounds[bgTypeId].erase(instanceID); }
         uint32 CreateClientVisibleInstanceId(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracketId);
+        static bool IsArena(BattleGroundTypeId bgTypeId);
         void DeleteClientVisibleInstanceId(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracketId, uint32 clientInstanceID)
         {
             m_clientBattleGroundIds[bgTypeId][bracketId].erase(clientInstanceID);

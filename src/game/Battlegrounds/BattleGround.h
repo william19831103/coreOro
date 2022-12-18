@@ -136,8 +136,24 @@ enum BattleGroundQueueTypeId
     BATTLEGROUND_QUEUE_AV       = 1,
     BATTLEGROUND_QUEUE_WS       = 2,
     BATTLEGROUND_QUEUE_AB       = 3,
+    BATTLEGROUND_QUEUE_NA1v1    = 4,
+    BATTLEGROUND_QUEUE_NA2v2    = 5,
+    BATTLEGROUND_QUEUE_NA3v3    = 6,
+    BATTLEGROUND_QUEUE_NA5v5    = 7,
+    BATTLEGROUND_QUEUE_BE1v1    = 8,
+    BATTLEGROUND_QUEUE_BE2v2    = 9,
+    BATTLEGROUND_QUEUE_BE3v3    = 10,
+    BATTLEGROUND_QUEUE_BE5v5    = 11,
+    BATTLEGROUND_QUEUE_RL1v1    = 12,
+    BATTLEGROUND_QUEUE_RL2v2    = 13,
+    BATTLEGROUND_QUEUE_RL3v3    = 14,
+    BATTLEGROUND_QUEUE_RL5v5    = 15,
+    BATTLEGROUND_QUEUE_DS1v1    = 16,
+    BATTLEGROUND_QUEUE_DS2v2    = 17,
+    BATTLEGROUND_QUEUE_DS3v3    = 18,
+    BATTLEGROUND_QUEUE_DS5v5    = 19
 };
-#define MAX_BATTLEGROUND_QUEUE_TYPES 4
+#define MAX_BATTLEGROUND_QUEUE_TYPES 20
 
 enum BattleGroundBracketId                                  // bracketId for level ranges
 {
@@ -154,6 +170,9 @@ enum ScoreType
     SCORE_DEATHS                = 2,
     SCORE_HONORABLE_KILLS       = 3,
     SCORE_BONUS_HONOR           = 4,
+    //UterusOne Arena
+    SCORE_DAMAGE_DONE           = 5,
+    SCORE_HEALING_DONE          = 6,
     //WS
     SCORE_FLAG_CAPTURES         = 7,
     SCORE_FLAG_RETURNS          = 8,
@@ -286,6 +305,9 @@ class BattleGround
         uint32 GetEndTime() const           { return m_endTime; }
         uint32 GetMaxPlayers() const        { return m_maxPlayers; }
         uint32 GetMinPlayers() const        { return m_minPlayers; }
+        bool IsArena() const { return GetMapId() == 35 || GetMapId() == 556 || GetMapId() == 557 || GetMapId() == 558 || GetMapId() == 559 || GetMapId() == 560 || GetMapId() == 561 || GetMapId() == 562 || GetMapId() == 563 || GetMapId() == 570 || GetMapId() == 571 || GetMapId() == 572 || GetMapId() == 573 || GetMapId() == 617 || GetMapId() == 618 || GetMapId() == 619 || GetMapId() == 620; }
+        bool IsDalaranArena() const { return GetMapId() == 617 || GetMapId() == 618 || GetMapId() == 619 || GetMapId() == 620; }
+        bool IsNagrandArena() const { return GetMapId() == 559 || GetMapId() == 558 || GetMapId() == 557 || GetMapId() == 556; }
 
         uint32 GetMinLevel() const          { return m_levelMin; }
         uint32 GetMaxLevel() const          { return m_levelMax; }
@@ -399,6 +421,7 @@ class BattleGround
         static void UpdateWorldStateForPlayer(uint32 field, uint32 value, Player* source);
         virtual void EndBattleGround(Team winner);
         static void BlockMovement(Player* player);
+        bool AllPlayersReady();
 
         void SendMessageToAll(int32 entry, ChatMsg type, Player const* source = nullptr);
         void SendYellToAll(int32 entry, uint32 language, ObjectGuid guid);
@@ -537,6 +560,7 @@ class BattleGround
         uint32 m_startMessageIds[BG_STARTING_EVENT_COUNT];
 
         bool   m_buffChange;
+        bool   m_playersReady;
 
     private:
         /* Battleground */
@@ -548,10 +572,12 @@ class BattleGround
         uint32 m_startTime;
         int32 m_endTime;                                    // it is set to 120000 when bg is ending and it decreases itself
         BattleGroundBracketId m_bracketId;
-        bool   m_inBGFreeSlotQueue;                         // used to make sure that BG is only once inserted into the BattleGroundMgr.m_bgFreeSlotQueue[bgTypeId] deque
+        bool   m_inBGFreeSlotQueue;                         // used to make sure that BG is only once inserted into the BattleGroundMgr.BGFreeSlotQueue[bgTypeId] deque
         int32  m_startDelayTime;
         bool   m_prematureCountDown;
         uint32 m_prematureCountDownTimer;
+        bool   m_tenSecondsCountDown;
+        uint32 m_tenSecondsCountDownTimer;
         char const* m_name;
 
         /* Player lists */

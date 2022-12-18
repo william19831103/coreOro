@@ -515,6 +515,7 @@ class Unit : public SpellCaster
         }
         bool IsAlive() const { return m_deathState == ALIVE; }
         bool IsDead() const { return m_deathState == DEAD || m_deathState == CORPSE; }
+        bool InArena() const { return GetMapId() == 35 || GetMapId() == 556 || GetMapId() == 557 || GetMapId() == 558 || GetMapId() == 559 || GetMapId() == 560 || GetMapId() == 561 || GetMapId() == 562 || GetMapId() == 563 || GetMapId() == 570 || GetMapId() == 571 || GetMapId() == 572 || GetMapId() == 573 || GetMapId() == 617 || GetMapId() == 618 || GetMapId() == 619 || GetMapId() == 620; }
         DeathState GetDeathState() const { return m_deathState; }
         virtual void SetDeathState(DeathState s);           // overwritten in Creature/Player/Pet
         uint32 GetLevel() const final { return GetUInt32Value(UNIT_FIELD_LEVEL); }
@@ -746,6 +747,8 @@ class Unit : public SpellCaster
         void RemoveAllNegativeAuras(AuraRemoveMode mode = AURA_REMOVE_BY_DEFAULT);
         void RemoveAuraTypeOnDeath(AuraType auraType);
         void RemoveAllAurasOnDeath();
+        void RemoveAllSpellCooldown();
+        void RemoveAllAurasWithLessThan30SecondsLeft();
         bool RemoveAuraDueToDebuffLimit(SpellAuraHolder* currentAura); // Returns true if we remove 'currentAura'
         void RemoveFearEffectsByDamageTaken(uint32 damage, uint32 exceptSpellId, DamageEffectType damagetype);
         uint32 GetNegativeAurasCount(); // Limit debuffs to 16
@@ -1320,6 +1323,7 @@ class Unit : public SpellCaster
         bool IsLevitating() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_LEVITATING); }
 
         void KnockBackFrom(WorldObject* target, float horizontalSpeed, float verticalSpeed);
+        void KnockBackFromTo(WorldObject* kicker, WorldObject* target, float horizontalSpeed, float verticalSpeed);
         void KnockBack(float angle, float horizontalSpeed, float verticalSpeed);
 
         // reflects direct client control (examples: a player MC another player or a creature (possess effects). etc...)

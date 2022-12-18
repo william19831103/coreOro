@@ -18,6 +18,11 @@
 #include "custom.h"
 #include "ScriptedAI.h"
 #include <ctime>
+#include "Arena.h"
+#include "BattleGround.h"
+#include "BattleGroundMgr.h"
+#include "Group.h"
+#include "Utilities/EventMap.h"
 
 // TELEPORT NPC
 
@@ -1149,6 +1154,1376 @@ CreatureAI* GetAI_custom_summon_debug(Creature *creature)
     return new npc_summon_debugAI(creature);
 }
 
+enum ArenaGossip
+{
+    GOSSIP_ACTION_BATTLEGROUND_WS = 1,
+    GOSSIP_ACTION_BATTLEGROUND_AB = 2,
+    GOSSIP_ACTION_BATTLEGROUND_AV = 3,
+    GOSSIP_ACTION_1V1_ARENA = 200,
+    GOSSIP_ACTION_2V2_ARENA = 201,
+    GOSSIP_ACTION_3V3_ARENA = 202,
+    GOSSIP_ACTION_5V5_ARENA = 203,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA1v1 = 4,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA2v2 = 5,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA3v3 = 6,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA5v5 = 7,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE1v1 = 8,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE2v2 = 9,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE3v3 = 10,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE5v5 = 11,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL1v1 = 12,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL2v2 = 13,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL3v3 = 14,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL5v5 = 15,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA1v1 = 104,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA2v2 = 105,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA3v3 = 106,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA5v5 = 107,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE1v1 = 108,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE2v2 = 109,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE3v3 = 110,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE5v5 = 111,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL1v1 = 112,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL2v2 = 113,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL3v3 = 114,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL5v5 = 115,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS1v1 = 16,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS2v2 = 17,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS3v3 = 18,
+    GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS5v5 = 19,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS1v1 = 116,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS2v2 = 117,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS3v3 = 118,
+    GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS5v5 = 119,
+
+    GOSSIP_ACTION_CONFIG_ARENA_MAX_ITEMLEVEL = 801,
+    GOSSIP_ACTION_CONFIG_ARENA_MAX_ITEMPATCH = 802,
+    GOSSIP_ACTION_CONFIG_ARENA_STASH = 803,
+    GOSSIP_ACTION_CONFIG_ARENA_ALLOW_ITEM_SWAP = 804,
+    GOSSIP_ACTION_CONFIG_ARENA_ALLOW_TRINKET_SWAP = 805,
+
+    GOSSIP_SENDER_SPECTATE_MATCH = 999,
+    GOSSIP_SENDER_SPECTATE = 900,
+    GOSSIP_SENDER_ADMIN = 800
+};
+
+enum ArenaNPC
+{
+    ARENA_ANNOUNCER = 600044
+};
+
+enum ArenaGossipText
+{
+    DEFAULT = 600068
+};
+
+enum sSpells
+{
+    SPAWN_RED_LIGHTNING = 24240, //visual red lightning pillar.
+    SPAWN_PINK_LIGHTNING = 28234, //visual pink lightning pillar.
+};
+
+int QueueCounter(Player* pPlayer, uint8 bgTypeID)
+{
+    if (!pPlayer)
+        return NULL;
+
+    if (!bgTypeID)
+        return NULL;
+
+    uint32 instanceId;
+    uint32 removeTime;
+    uint8 countQueue, countInArena, countHasinvite, SUM;
+
+    countQueue = 0;
+    countInArena = 0;
+    countHasinvite = 0;
+    SUM = 0;
+
+    BattleGroundQueueTypeId BgQueueTypeId = BattleGroundMgr::BgQueueTypeId(BattleGroundTypeId(bgTypeID));
+
+    if (!BgQueueTypeId)
+        return NULL;
+
+    BattleGroundQueue& queue = sBattleGroundMgr.m_battleGroundQueues[BgQueueTypeId];
+    BattleGroundTypeId typeId = BattleGroundMgr::BgTemplateId(BattleGroundQueueTypeId(BgQueueTypeId));
+
+    if (!typeId)
+        return NULL;
+
+    BattleGround* bg = sBattleGroundMgr.GetBattleGroundTemplate(typeId);
+
+    if (!bg)
+        return NULL;
+
+    BattleGroundBracketId bracket_id = pPlayer->GetBattleGroundBracketIdFromLevel(typeId);
+
+    if (!bracket_id)
+        return NULL;
+
+    // Loop trough all BGs with the bgTypeId.
+    for (BattleGroundSet::const_iterator it = sBattleGroundMgr.GetBattleGroundsBegin(BattleGroundTypeId(typeId)); it != sBattleGroundMgr.GetBattleGroundsEnd(BattleGroundTypeId(typeId)); ++it)
+    {
+        for (BattleGroundQueue::QueuedPlayersMap::const_iterator itr = queue.m_queuedPlayers.begin(); itr != queue.m_queuedPlayers.end(); ++itr)
+        {
+            // Get the instance ID to check how many players are already in.
+            instanceId = itr->second.groupInfo->isInvitedToBgInstanceGuid;
+            removeTime = itr->second.groupInfo->removeInviteTime;
+
+            if (it->second->GetInstanceID() == instanceId)
+            {
+                if (queue.IsPlayerInvited(itr->first, instanceId, removeTime)) // looking for players that are invited to this instanceID.
+                {
+                    Player* plr = ObjectAccessor::FindPlayerNotInWorld(itr->first);
+
+                    if (!plr)
+                        continue;
+
+                    if (plr->GetBattleGroundBracketIdFromLevel(typeId) != bracket_id)
+                        continue;
+
+                    if (removeTime) // If there is a time, player has invite.
+                        ++countHasinvite;
+                    else            // No time, player is just in queue.
+                        ++countQueue;
+                }
+            }
+        }
+
+        // Skip all running arenas.
+        if (it->second->GetStatus() > STATUS_WAIT_JOIN)
+            continue;
+
+        // Get all players that are in the arena already.
+        BattleGround::BattleGroundPlayerMap const& pPlayers = it->second->GetPlayers();
+        for (BattleGround::BattleGroundPlayerMap::const_iterator itr = pPlayers.begin(); itr != pPlayers.end(); ++itr)
+        {
+            if (!itr->first)
+                continue;
+
+            ++countInArena;
+        }
+    }
+
+    SUM = countQueue + countHasinvite + countInArena;
+
+    return SUM;
+}
+
+// TalentTab.dbc -> TalentTabID
+const uint32 FORBIDDEN_TALENTS_IN_1V1_ARENA[] =
+{
+    // Healer
+    201, // PriestDiscipline
+    202, // PriestHoly
+    382, // PaladinHoly
+    262, // ShamanRestoration
+    282, // DruidRestoration
+
+    // Tanks
+    //383, // PaladinProtection
+    //163, // WarriorProtection
+
+    0 // End
+};
+
+static bool Arena1v1CheckTalents(Player* pPlayer)
+{
+    if (!pPlayer)
+        return false;
+
+    uint32 count = 0;
+    for (uint32 talentId = 0; talentId < sTalentStore.GetNumRows(); ++talentId)
+    {
+        TalentEntry const* talentInfo = sTalentStore.LookupEntry(talentId);
+
+        if (!talentInfo)
+            continue;
+
+        for (int8 rank = MAX_TALENT_RANK - 1; rank >= 0; --rank)
+        {
+            if (talentInfo->RankID[rank] == 0)
+                continue;
+
+            if (pPlayer->HasSpell(talentInfo->RankID[rank]))
+            {
+                for (int8 i = 0; FORBIDDEN_TALENTS_IN_1V1_ARENA[i] != 0; i++)
+                    if (FORBIDDEN_TALENTS_IN_1V1_ARENA[i] == talentInfo->TalentTab)
+                        count += rank + 1;
+            }
+        }
+    }
+
+    if (count >= 36)
+    {
+        ChatHandler(pPlayer->GetSession()).SendSysMessage("You can't join, because you have invested to much points in a forbidden talent. Please edit your talents.");
+        return false;
+    }
+    else
+        return true;
+}
+
+inline std::string GetArenaBracketName(uint8 typeId)
+{
+    BattleGroundQueueTypeId BgQueueTypeId = BattleGroundMgr::BgQueueTypeId(BattleGroundTypeId(typeId));
+
+    if (!BgQueueTypeId)
+        return "Arena Unknown";
+
+    switch (BgQueueTypeId)
+    {
+    case BATTLEGROUND_QUEUE_NA1v1:
+    case BATTLEGROUND_QUEUE_BE1v1:
+    case BATTLEGROUND_QUEUE_RL1v1:
+    case BATTLEGROUND_QUEUE_DS1v1:
+        return "Arena 1v1"; break;
+    case BATTLEGROUND_QUEUE_NA2v2:
+    case BATTLEGROUND_QUEUE_BE2v2:
+    case BATTLEGROUND_QUEUE_RL2v2:
+    case BATTLEGROUND_QUEUE_DS2v2:
+        return "Arena 2v2"; break;
+    case BATTLEGROUND_QUEUE_NA3v3:
+    case BATTLEGROUND_QUEUE_BE3v3:
+    case BATTLEGROUND_QUEUE_RL3v3:
+    case BATTLEGROUND_QUEUE_DS3v3:
+        return "Arena 3v3"; break;
+    case BATTLEGROUND_QUEUE_NA5v5:
+    case BATTLEGROUND_QUEUE_BE5v5:
+    case BATTLEGROUND_QUEUE_RL5v5:
+    case BATTLEGROUND_QUEUE_DS5v5:
+        return "Arena 5v5"; break;
+    default:
+        return "Arena Unknown";
+    }
+}
+
+inline uint8 GetArenaBracketType(uint8 bgtypeId)
+{
+    BattleGroundQueueTypeId BgQueueTypeId = BattleGroundMgr::BgQueueTypeId(BattleGroundTypeId(bgtypeId));
+
+    if (!BgQueueTypeId)
+        return NULL;
+
+    switch (BgQueueTypeId)
+    {
+    case BATTLEGROUND_QUEUE_NA1v1:
+    case BATTLEGROUND_QUEUE_BE1v1:
+    case BATTLEGROUND_QUEUE_RL1v1:
+    case BATTLEGROUND_QUEUE_DS1v1:
+        return 1; break;
+    case BATTLEGROUND_QUEUE_NA2v2:
+    case BATTLEGROUND_QUEUE_BE2v2:
+    case BATTLEGROUND_QUEUE_RL2v2:
+    case BATTLEGROUND_QUEUE_DS2v2:
+        return 2; break;
+    case BATTLEGROUND_QUEUE_NA3v3:
+    case BATTLEGROUND_QUEUE_BE3v3:
+    case BATTLEGROUND_QUEUE_RL3v3:
+    case BATTLEGROUND_QUEUE_DS3v3:
+        return 3; break;
+    case BATTLEGROUND_QUEUE_NA5v5:
+    case BATTLEGROUND_QUEUE_BE5v5:
+    case BATTLEGROUND_QUEUE_RL5v5:
+    case BATTLEGROUND_QUEUE_DS5v5:
+        return 5; break;
+    }
+    return NULL;
+}
+
+inline uint8 GetArenaBracketQueueChecker(Player* pPlayer, uint8 arenatype)
+{
+    if (!arenatype)
+        return NULL;
+
+    switch (arenatype)
+    {
+    case 1:
+    {
+        if (QueueCounter(pPlayer, BATTLEGROUND_NA1v1))
+            return BATTLEGROUND_NA1v1;
+        if (QueueCounter(pPlayer, BATTLEGROUND_BE1v1))
+            return BATTLEGROUND_BE1v1;
+        if (QueueCounter(pPlayer, BATTLEGROUND_RL1v1))
+            return BATTLEGROUND_RL1v1;
+        if (QueueCounter(pPlayer, BATTLEGROUND_DS1v1))
+            return BATTLEGROUND_DS1v1;
+        break;
+    }
+    case 2:
+    {
+        if (QueueCounter(pPlayer, BATTLEGROUND_NA2v2))
+            return BATTLEGROUND_NA2v2;
+        if (QueueCounter(pPlayer, BATTLEGROUND_BE2v2))
+            return BATTLEGROUND_BE2v2;
+        if (QueueCounter(pPlayer, BATTLEGROUND_RL2v2))
+            return BATTLEGROUND_RL2v2;
+        if (QueueCounter(pPlayer, BATTLEGROUND_DS2v2))
+            return BATTLEGROUND_DS2v2;
+        break;
+    }
+    case 3:
+    {
+        if (QueueCounter(pPlayer, BATTLEGROUND_NA3v3))
+            return BATTLEGROUND_NA3v3;
+        if (QueueCounter(pPlayer, BATTLEGROUND_BE3v3))
+            return BATTLEGROUND_BE3v3;
+        if (QueueCounter(pPlayer, BATTLEGROUND_RL3v3))
+            return BATTLEGROUND_RL3v3;
+        if (QueueCounter(pPlayer, BATTLEGROUND_DS3v3))
+            return BATTLEGROUND_DS3v3;
+        break;
+    }
+    case 5:
+    {
+        if (QueueCounter(pPlayer, BATTLEGROUND_NA5v5))
+            return BATTLEGROUND_NA5v5;
+        if (QueueCounter(pPlayer, BATTLEGROUND_BE5v5))
+            return BATTLEGROUND_BE5v5;
+        if (QueueCounter(pPlayer, BATTLEGROUND_RL5v5))
+            return BATTLEGROUND_RL5v5;
+        if (QueueCounter(pPlayer, BATTLEGROUND_DS5v5))
+            return BATTLEGROUND_DS5v5;
+        break;
+    }
+    }
+    return NULL;
+}
+
+inline bool PlayerIsInQueueFor1v1(Player* pPlayer)
+{
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_NA1v1))
+        return true;
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_BE1v1))
+        return true;
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_RL1v1))
+        return true;
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_DS1v1))
+        return true;
+
+    return false;
+}
+
+inline bool PlayerIsInQueueFor2v2(Player* pPlayer)
+{
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_NA2v2))
+        return true;
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_BE2v2))
+        return true;
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_RL2v2))
+        return true;
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_DS2v2))
+        return true;
+
+    return false;
+}
+
+inline bool PlayerIsInQueueFor3v3(Player* pPlayer)
+{
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_NA3v3))
+        return true;
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_BE3v3))
+        return true;
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_RL3v3))
+        return true;
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_DS3v3))
+        return true;
+
+    return false;
+}
+
+inline bool PlayerIsInQueueFor5v5(Player* pPlayer)
+{
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_NA5v5))
+        return true;
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_BE5v5))
+        return true;
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_RL5v5))
+        return true;
+    if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BATTLEGROUND_QUEUE_DS5v5))
+        return true;
+
+    return false;
+}
+
+uint8 GenerateRandomArenaForBracket(uint8 bracket)
+{
+    if (!bracket)
+        return NULL;
+
+    switch (bracket)
+    {
+    case GOSSIP_ACTION_1V1_ARENA:
+    {
+        switch (urand(1, 8))
+        {
+        case 1:
+        case 2:
+            return BATTLEGROUND_NA1v1; break;
+        case 3:
+        case 4:
+            return BATTLEGROUND_RL1v1; break;
+        case 5:
+        case 6:
+            return BATTLEGROUND_DS1v1; break;
+        case 7:
+        case 8:
+            return BATTLEGROUND_BE1v1; break;
+        }
+        break;
+    }
+    case GOSSIP_ACTION_2V2_ARENA:
+    {
+        switch (urand(1, 4))
+        {
+        case 1: return BATTLEGROUND_NA2v2; break;
+        case 2: return BATTLEGROUND_BE2v2; break;
+        case 3: return BATTLEGROUND_RL2v2; break;
+        case 4: return BATTLEGROUND_DS2v2; break;
+        }
+        break;
+    }
+    case GOSSIP_ACTION_3V3_ARENA:
+    {
+        switch (urand(1, 4))
+        {
+        case 1: return BATTLEGROUND_NA3v3; break;
+        case 2: return BATTLEGROUND_BE3v3; break;
+        case 3: return BATTLEGROUND_RL3v3; break;
+        case 4: return BATTLEGROUND_DS3v3; break;
+        }
+        break;
+    }
+    case GOSSIP_ACTION_5V5_ARENA:
+    {
+        switch (urand(1, 4))
+        {
+        case 1: return BATTLEGROUND_NA5v5; break;
+        case 2: return BATTLEGROUND_BE5v5; break;
+        case 3: return BATTLEGROUND_RL5v5; break;
+        case 4: return BATTLEGROUND_DS5v5; break;
+        }
+        break;
+    }
+    default:
+        return NULL;
+    }
+    return NULL;
+}
+
+bool JoinQueueArena(Player* pPlayer, GameObject* pGameObject, uint8 bgTypeid)
+{
+    if (!pPlayer || !pGameObject)
+        return false;
+
+    uint64 guid = pPlayer->GetGUID();
+    bool joinAsGroup = false;
+    bool isPremade = false;
+    Group* grp = pPlayer->GetGroup();
+
+    if (grp)
+    {
+        switch (grp->GetMembersCount())
+        {
+        case 2:
+        case 3:
+        case 5:
+            joinAsGroup = true;
+            break;
+        default:
+            joinAsGroup = false;
+            break;
+        }
+    }
+
+    // Ignore if we already in BG or BG queue
+    if (pPlayer->InBattleGround())
+        return false;
+
+    BattleGround* bg = nullptr;
+
+    bg = sBattleGroundMgr.GetBattleGroundTemplate(BattleGroundTypeId(bgTypeid));
+
+    // For example: bgTypeid is BATTLEGROUND_NA1v1 now, BATTLEGROUND_NA1v1 is bracket 1, so lets check if someone else already is in queue in another bracket 1 arena and set bgTypeid to this bg.
+    // First get the bracket for the current bgTypeid.
+    uint8 bgType_ID = GetArenaBracketType(bgTypeid);
+    // Then check all Queues for this bracket if there's some players in queue.
+    uint8 arenatype_ID = GetArenaBracketQueueChecker(pPlayer, bgType_ID);
+
+    if (arenatype_ID)
+        bg = sBattleGroundMgr.GetBattleGroundTemplate(BattleGroundTypeId(arenatype_ID));
+
+    if (!bg)
+        return false;
+
+    BattleGroundTypeId bgTypeID = bg->GetTypeID();
+
+    if (!bgTypeID)
+        return false;
+
+    BattleGroundQueueTypeId BgQueueTypeId = BattleGroundMgr::BgQueueTypeId(bgTypeID);
+
+    if (!BgQueueTypeId)
+        return false;
+
+    if (PlayerIsInQueueFor1v1(pPlayer) && GetArenaBracketType(bgTypeID) == 1 || PlayerIsInQueueFor2v2(pPlayer) && GetArenaBracketType(bgTypeID) == 2 || PlayerIsInQueueFor3v3(pPlayer) && GetArenaBracketType(bgTypeID) == 3 || PlayerIsInQueueFor5v5(pPlayer) && GetArenaBracketType(bgTypeID) == 5)
+        return false;
+
+    BattleGroundQueue& queue = sBattleGroundMgr.m_battleGroundQueues[BgQueueTypeId];
+    for (BattleGroundQueue::QueuedPlayersMap::const_iterator it = queue.m_queuedPlayers.begin(); it != queue.m_queuedPlayers.end(); ++it)
+    {
+        if (it->first == pPlayer->GetObjectGuid())
+            return false;
+    }
+
+    BattleGroundBracketId bracketEntry = pPlayer->GetBattleGroundBracketIdFromLevel(bgTypeID);
+
+    if (bracketEntry == BG_BRACKET_ID_NONE)
+        return false;
+
+    // GroupJoinBattleGroundResult err = ERR_GROUP_JOIN_BATTLEGROUND_FAIL.
+    if (!joinAsGroup)
+    {
+        // Check if already in queue.
+        if (pPlayer->GetBattleGroundQueueIndex(BgQueueTypeId) < PLAYER_MAX_BATTLEGROUND_QUEUES)
+            return false;
+
+        // Check if has free queue slots.
+        if (!pPlayer->HasFreeBattleGroundQueueId())
+            return false;
+
+        BattleGroundQueue& bgQueue = sBattleGroundMgr.m_battleGroundQueues[BgQueueTypeId];
+
+        GroupQueueInfo* ginfo = bgQueue.AddGroup(pPlayer, nullptr, bgTypeID, bracketEntry, false, 0, 0);
+        uint32 avgTime = bgQueue.GetAverageQueueWaitTime(ginfo, bracketEntry);
+        uint32 queueSlot = pPlayer->AddBattleGroundQueueId(BgQueueTypeId);
+        pPlayer->SetBattleGroundEntryPoint(pPlayer, false);
+
+        WorldPacket data;
+        sBattleGroundMgr.BuildBattleGroundStatusPacket(&data, bg, queueSlot, STATUS_WAIT_QUEUE, avgTime, 0);
+        pPlayer->GetSession()->SendPacket(&data);
+    }
+    else
+    {
+        grp = pPlayer->GetGroup();
+        // No group found.
+        if (!grp)
+            return false;
+
+        if (grp->isRaidGroup())
+            return false;
+
+        std::vector<uint32> excludedMembers;
+        uint32 err = grp->CanJoinBattleGroundQueue(bgTypeID, BgQueueTypeId, 0, bg->GetMaxPlayersPerTeam(), pPlayer, &excludedMembers);
+        isPremade = sWorld.getConfig(CONFIG_UINT32_BATTLEGROUND_PREMADE_GROUP_WAIT_FOR_MATCH) &&
+            (grp->GetMembersCount() >= sWorld.getConfig(CONFIG_UINT32_BATTLEGROUND_PREMADE_QUEUE_GROUP_MIN_SIZE));
+
+        if (err == BG_JOIN_ERR_GROUP_DESERTER)
+        {
+            WorldPacket data;
+            sBattleGroundMgr.BuildGroupJoinedBattlegroundPacket(&data, BG_GROUPJOIN_DESERTERS);
+            pPlayer->GetSession()->SendPacket(&data);
+            pPlayer->GetSession()->SendBattleGroundJoinError(err);
+            return false;
+        }
+        else if (err != BG_JOIN_ERR_OK)
+        {
+            pPlayer->GetSession()->SendBattleGroundJoinError(err);
+            return false;
+        }
+
+        // if we're here, then the conditions to join a bg are met. We can proceed in joining.
+
+        BattleGroundQueue& bgQueue = sBattleGroundMgr.m_battleGroundQueues[BgQueueTypeId];
+        // DEBUG_LOG("Battleground: the following players are joining as group:");
+        GroupQueueInfo* ginfo = bgQueue.AddGroup(pPlayer, grp, bgTypeID, bracketEntry, isPremade, 0, &excludedMembers);
+        uint32 avgTime = bgQueue.GetAverageQueueWaitTime(ginfo, bracketEntry);
+        for (GroupReference* itr = grp->GetFirstMember(); itr != NULL; itr = itr->next())
+        {
+            Player* member = itr->getSource();
+            if (!member) continue;  // this should never happen
+
+            if (member->IsInWorld()) return false;
+
+            if (std::find(excludedMembers.begin(), excludedMembers.end(), member->GetGUIDLow()) != excludedMembers.end())
+            {
+                WorldPacket data;
+                sBattleGroundMgr.BuildGroupJoinedBattlegroundPacket(&data, BG_GROUPJOIN_FAILED);
+                member->GetSession()->SendPacket(&data);
+                pPlayer->GetSession()->SendBattleGroundJoinError(err);
+                continue;
+            }
+
+            uint32 queueSlot = member->AddBattleGroundQueueId(BgQueueTypeId);   // Add to queue.
+            member->SetBattleGroundEntryPoint(pPlayer, false);                  // Store entry point coords.
+
+            WorldPacket data;
+            // Send status packet (in queue).
+            sBattleGroundMgr.BuildBattleGroundStatusPacket(&data, bg, queueSlot, STATUS_WAIT_QUEUE, avgTime, 0);
+            member->GetSession()->SendPacket(&data);
+            sBattleGroundMgr.BuildGroupJoinedBattlegroundPacket(&data, bg->GetMapId());
+            member->GetSession()->SendPacket(&data);
+            // DEBUG_LOG("Battleground: player joined queue for bg queue type %u bg type %u: GUID %u, NAME %s", BgQueueTypeId, bgTypeID, member->GetGUIDLow(), member->GetName());
+        }
+        // DEBUG_LOG("Battleground: group end");
+    }
+
+    sBattleGroundMgr.ScheduleQueueUpdate(BgQueueTypeId, bgTypeID, bracketEntry);
+
+    std::ostringstream ss;
+
+    ss << pPlayer->GetName();
+
+    if (joinAsGroup)
+        ss << " and his Group";
+
+    BattleGround* bg_template = sBattleGroundMgr.GetBattleGroundTemplate(BattleGroundTypeId(bgTypeID));
+    ASSERT(bg_template);
+
+    ss << " queued up for " << GetArenaBracketName(bgTypeID).c_str();
+
+    if (Creature* Announcer = pGameObject->FindNearestCreature(ARENA_ANNOUNCER, 20.0f))
+    {
+        Announcer->MonsterYell(ss.str().c_str());
+        Announcer->HandleEmoteCommand(EMOTE_ONESHOT_SHOUT);
+    }
+
+    return true;
+}
+
+std::string GetClassString2(Player* pPlayer)
+{
+    switch (pPlayer->GetClass())
+    {
+    case CLASS_WARRIOR: return "Warrior"; break;
+    case CLASS_PALADIN: return "Paladin"; break;
+    case CLASS_HUNTER:  return "Hunter";  break;
+    case CLASS_ROGUE:   return "Rogue";   break;
+    case CLASS_PRIEST:  return "Priest";  break;
+    case CLASS_SHAMAN:  return "Shaman";  break;
+    case CLASS_MAGE:    return "Mage";    break;
+    case CLASS_WARLOCK: return "Warlock"; break;
+    case CLASS_DRUID:   return "Druid";   break;
+    default: return "Warrior"; break;
+    }
+}
+
+bool GossipHello_ArenaMaster(Player* pPlayer, GameObject* pGameObject)
+{
+    if (!pPlayer)
+        return false;
+
+    pPlayer->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_INTERACTING_CANCELS);
+
+    if (pPlayer->GetLevel() < 19)
+    {
+        pGameObject->PlayDirectSound(847, pPlayer);
+        pPlayer->GetSession()->SendNotification("You must be Level 19 or higher.");
+        return false;
+    }
+
+    if (pPlayer->IsInCombat())
+    {
+        pGameObject->PlayDirectSound(847, pPlayer);
+        pPlayer->GetSession()->SendNotification("You are in combat.");
+        return false;
+    }
+
+    if (pPlayer->IsGameMaster())
+    {
+        pGameObject->PlayDirectSound(847, pPlayer);
+        pPlayer->GetSession()->SendNotification("Please disable GM Mode.");
+        return false;
+    }
+
+    bool SomeoneInQueue_One_v_One = false;
+    bool SomeoneInQueue_Two_v_Two = false;
+    bool SomeoneInQueue_Three_v_Three = false;
+    bool SomeoneInQueue_Five_v_Five = false;
+
+    const Group* grp = pPlayer->GetGroup();
+    if (!grp) // Is not in a group. Can only join solo queue.
+    {
+        uint8 counter = 0;
+        uint8 countQueue;
+
+        // This shows up to 4 Arenas where players are queued up to speed up the way to find games where players queued up actually, just for the lazy pigs.
+        for (uint8 bgTypeId = BATTLEGROUND_NA1v1; bgTypeId <= BATTLEGROUND_DS5v5; ++bgTypeId)
+        {
+            // Don't show more than 4 gossip menus.
+            if (counter > 4)
+                break;
+
+            countQueue = QueueCounter(pPlayer, bgTypeId);
+
+            if (!countQueue)
+                continue;
+
+            std::string playerstr = " Player";
+
+            if (countQueue > 1)
+                playerstr = " Players";
+            else
+                playerstr = " Player";
+
+            std::ostringstream gossipname;
+            BattleGroundQueueTypeId BgQueueTypeId = BattleGroundMgr::BgQueueTypeId(BattleGroundTypeId(bgTypeId));
+            BattleGroundQueue& queue = sBattleGroundMgr.m_battleGroundQueues[BgQueueTypeId];
+            BattleGroundTypeId typeId = BattleGroundMgr::BgTemplateId(BattleGroundQueueTypeId(BgQueueTypeId));
+            BattleGround* bg = sBattleGroundMgr.GetBattleGroundTemplate(typeId);
+
+            // Found an arena with not enough Players, show a gossip to join them.
+            if (countQueue < bg->GetMaxPlayers())
+            {
+                switch (GetArenaBracketType(bgTypeId))
+                {
+                case 1: SomeoneInQueue_One_v_One = true; break;
+                case 2: SomeoneInQueue_Two_v_Two = true; break;
+                case 3: SomeoneInQueue_Three_v_Three = true; break;
+                case 5: SomeoneInQueue_Five_v_Five = true; break;
+                }
+
+                if (!pPlayer->InBattleGroundQueueForBattleGroundQueueType(BgQueueTypeId))
+                {
+                    gossipname << GetArenaBracketName(bgTypeId).c_str() << "\n(" << std::to_string(countQueue) << playerstr.c_str() << " waiting)\n\n ";
+                    pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, gossipname.str().c_str(), 0, BgQueueTypeId);
+                }
+            }
+            // If in queue show a gossip to leave it.
+            if (pPlayer->InBattleGroundQueueForBattleGroundQueueType(BgQueueTypeId))
+            {
+                gossipname << "Leave " << GetArenaBracketName(bgTypeId) << "\n(" << std::to_string(countQueue) << playerstr.c_str() << " waiting)\n\n ";
+                pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, gossipname.str().c_str(), 0, BgQueueTypeId + 100);
+            }
+
+            ++counter;
+        }
+
+        if (!PlayerIsInQueueFor1v1(pPlayer) && !SomeoneInQueue_One_v_One)
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Queue for 1v1 Arena", 0, GOSSIP_ACTION_1V1_ARENA);
+        if (!PlayerIsInQueueFor2v2(pPlayer) && !SomeoneInQueue_Two_v_Two)
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Queue for 2v2 Arena", 0, GOSSIP_ACTION_2V2_ARENA);
+        if (!PlayerIsInQueueFor3v3(pPlayer) && !SomeoneInQueue_Three_v_Three)
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Queue for 3v3 Arena", 0, GOSSIP_ACTION_3V3_ARENA);
+        if (!PlayerIsInQueueFor5v5(pPlayer) && !SomeoneInQueue_Five_v_Five)
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Queue for 5v5 Arena\n\n", 0, GOSSIP_ACTION_5V5_ARENA);
+    }
+    else if (grp->GetLeaderGuid() != pPlayer->GetObjectGuid() && !pPlayer->InBattleGroundQueue()) // Is in a group and not the leader. Can't do shit.
+    {
+        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "You are not the Leader of your group. Get Leader or leave the group to queue.", 0, 300);
+        pPlayer->SEND_GOSSIP_MENU(DEFAULT, pGameObject->GetObjectGuid());
+        return true;
+    }
+    else if (grp->GetLeaderGuid() == pPlayer->GetObjectGuid()) // Is in a group and leader. Can only join group queue.
+    {
+        switch (grp->GetMembersCount())
+        {
+        case 2:
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Group Queue 2v2 Arena", 0, GOSSIP_ACTION_2V2_ARENA);
+            break;
+        case 3:
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Group Queue 3v3 Arena", 0, GOSSIP_ACTION_3V3_ARENA);
+            break;
+        case 5:
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Group Queue 5v5 Arena\n\n", 0, GOSSIP_ACTION_5V5_ARENA);
+            break;
+        default:
+            ChatHandler(pPlayer->GetSession()).SendSysMessage("The number of members in your group will not be accepted to queue up.");
+            break;
+        }
+    }
+
+    // Search for players in arenas and add a spectator menu.
+    uint8 players = 0;
+    for (uint8 bgTypeId = BATTLEGROUND_NA1v1; bgTypeId <= BATTLEGROUND_DS5v5; ++bgTypeId)
+    {
+        for (BattleGroundSet::const_iterator it = sBattleGroundMgr.GetBattleGroundsBegin(BattleGroundTypeId(bgTypeId)); it != sBattleGroundMgr.GetBattleGroundsEnd(BattleGroundTypeId(bgTypeId)); ++it)
+        {
+            if (!it->first)
+                continue;
+
+            BattleGround* bg = it->second;
+
+            if (!bg)
+                continue;
+
+            // Don't show Spectate menu if no bg is running
+            if (bg->GetStatus() == STATUS_WAIT_LEAVE)
+                continue;
+
+            BattleGround::BattleGroundPlayerMap const& pPlayers = it->second->GetPlayers();
+
+            for (BattleGround::BattleGroundPlayerMap::const_iterator itr = pPlayers.begin(); itr != pPlayers.end(); ++itr)
+            {
+                if (!itr->first)
+                    continue;
+
+                if (Player* plr = ObjectAccessor::FindPlayer(itr->first))
+                {
+                    if (!plr)
+                        continue;
+
+                    // Just need to find 1 Player in an Arena to show the Spectate menu.
+                    if (players > 0)
+                        break;
+
+                    ++players;
+
+                    pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Spectate Arena match", GOSSIP_SENDER_SPECTATE, 0);
+                }
+            }
+        }
+    }
+
+    // Only admins can config arena.
+    if (pPlayer->GetSession()->GetSecurity() >= SEC_ADMINISTRATOR)
+    {
+        uint32 MaxItemLevel = sWorld.getConfig(CONFIG_UINT32_ARENA_MAX_ITEMLEVEL);
+        uint32 MaxItemPatch = sWorld.getConfig(CONFIG_UINT32_ARENA_MAX_ITEMPATCH);
+        bool AllowItemSwap = sWorld.getConfig(CONFIG_BOOL_ARENA_ALLOW_ITEM_SWAP);
+        bool AllowTrinketSwap = sWorld.getConfig(CONFIG_BOOL_ARENA_ALLOW_TRINKET_SWAP);
+
+        std::ostringstream MaxItemLevel_ss;
+        MaxItemLevel_ss << "Arena.MaxItemLevel = " << MaxItemLevel;
+        std::ostringstream MaxItemPatch_ss;
+        MaxItemPatch_ss << "Arena.MaxItemPatch = " << MaxItemPatch;
+        std::ostringstream EnableStash_ss;
+        std::ostringstream AllowItemSwap_ss;
+        if (AllowItemSwap)
+            AllowItemSwap_ss << "Arena.AllowItemSwap = true";
+        else
+            AllowItemSwap_ss << "Arena.AllowItemSwap = false";
+        std::ostringstream AllowTrinketSwap_ss;
+        if (AllowTrinketSwap)
+            AllowTrinketSwap_ss << "Arena.AllowTrinketSwap = true";
+        else
+            AllowTrinketSwap_ss << "Arena.AllowTrinketSwap = false";
+
+        pPlayer->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, MaxItemLevel_ss.str().c_str(), GOSSIP_SENDER_ADMIN, GOSSIP_ACTION_CONFIG_ARENA_MAX_ITEMLEVEL, "Save as...", true);
+        pPlayer->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, MaxItemPatch_ss.str().c_str(), GOSSIP_SENDER_ADMIN, GOSSIP_ACTION_CONFIG_ARENA_MAX_ITEMPATCH, "Save as...", true);
+        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, AllowItemSwap_ss.str().c_str(), GOSSIP_SENDER_ADMIN, GOSSIP_ACTION_CONFIG_ARENA_ALLOW_ITEM_SWAP);
+        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, AllowTrinketSwap_ss.str().c_str(), GOSSIP_SENDER_ADMIN, GOSSIP_ACTION_CONFIG_ARENA_ALLOW_TRINKET_SWAP);
+        //pPlayer->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "<ADMIN> Save my current Gear & Talents.", GOSSIP_SENDER_START, SAVE_TEMP, "Save as...", true);
+        //pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "<ADMIN> player_factionchange_items.", GOSSIP_SENDER_START, FIX_DB);
+    }
+    pPlayer->SEND_GOSSIP_MENU(DEFAULT, pGameObject->GetObjectGuid());
+
+    return true;
+}
+
+bool GossipSelect_ArenaMaster(Player* pPlayer, GameObject* pGameObject, uint32 sender, uint32 action)
+{
+    const Group* grp = pPlayer->GetGroup();
+
+    switch (action)
+    {
+    case GOSSIP_ACTION_BATTLEGROUND_WS:
+        pPlayer->GetSession()->SendBattleGroundList(pPlayer->GetGUID(), BATTLEGROUND_WS);
+        break;
+    case GOSSIP_ACTION_BATTLEGROUND_AB:
+        pPlayer->GetSession()->SendBattleGroundList(pPlayer->GetGUID(), BATTLEGROUND_AB);
+        break;
+    case GOSSIP_ACTION_BATTLEGROUND_AV:
+        pPlayer->GetSession()->SendBattleGroundList(pPlayer->GetGUID(), BATTLEGROUND_AV);
+        break;
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA1v1:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE1v1:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL1v1:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS1v1:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA2v2:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE2v2:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL2v2:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS2v2:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA3v3:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE3v3:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL3v3:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS3v3:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA5v5:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE5v5:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL5v5:
+    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS5v5:
+    {
+        if (pPlayer->HasForbiddenArenaItems(BattleGroundTypeId(action)))
+        {
+            pGameObject->PlayDirectSound(847, pPlayer);
+            pPlayer->GetSession()->SendNotification("You are wearing forbidden items.");
+            GossipHello_ArenaMaster(pPlayer, pGameObject);
+            return false;
+        }
+        else
+        {
+            if (!JoinQueueArena(pPlayer, pGameObject, action))
+                ChatHandler(pPlayer->GetSession()).SendSysMessage("Something went wrong while joining queue. Already in another queue?");
+        }
+        GossipHello_ArenaMaster(pPlayer, pGameObject);
+        break;
+    }
+    case 300:
+    {
+        if (pPlayer)
+        {
+            pPlayer->SetGameMaster(false);
+            GossipHello_ArenaMaster(pPlayer, pGameObject);
+        }
+        break;
+    }
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA1v1:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA2v2:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA3v3:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA5v5:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE1v1:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE2v2:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE3v3:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE5v5:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL1v1:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL2v2:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL3v3:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL5v5:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS1v1:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS2v2:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS3v3:
+    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS5v5:
+    {
+        BattleGroundQueue& queue = sBattleGroundMgr.m_battleGroundQueues[action - 100];
+        if (&queue)
+            queue.LeaveQueue(pPlayer, BattleGroundTypeId(action - 100));
+        GossipHello_ArenaMaster(pPlayer, pGameObject);
+        break;
+    }
+    case GOSSIP_ACTION_1V1_ARENA:
+    case GOSSIP_ACTION_2V2_ARENA:
+    case GOSSIP_ACTION_3V3_ARENA:
+    case GOSSIP_ACTION_5V5_ARENA:
+    {
+        if (pPlayer->HasForbiddenArenaItems(BattleGroundTypeId(action)))
+        {
+            pGameObject->PlayDirectSound(847, pPlayer);
+            pPlayer->GetSession()->SendNotification("You are wearing forbidden items.");
+            GossipHello_ArenaMaster(pPlayer, pGameObject);
+            return false;
+        }
+        else
+        {
+            if (!JoinQueueArena(pPlayer, pGameObject, GenerateRandomArenaForBracket(action)))
+                ChatHandler(pPlayer->GetSession()).SendSysMessage("Something went wrong while joining queue. Already in another queue?");
+        }
+        GossipHello_ArenaMaster(pPlayer, pGameObject);
+        pPlayer->SEND_GOSSIP_MENU(DEFAULT, pGameObject->GetObjectGuid());
+        break;
+    }
+    }
+
+    if (sender == GOSSIP_SENDER_SPECTATE_MATCH)
+    {
+        // Leave every Arena queue first.
+        for (uint8 bgTypeId = BATTLEGROUND_NA1v1; bgTypeId <= BATTLEGROUND_DS5v5; ++bgTypeId)
+        {
+            BattleGroundQueue& queue = sBattleGroundMgr.m_battleGroundQueues[bgTypeId];
+            if (&queue)
+                queue.LeaveQueue(pPlayer, BattleGroundTypeId(bgTypeId));
+        }
+        if (sObjectMgr.GetPlayer(action))
+        {
+            Player* target = sObjectMgr.GetPlayer(action);
+
+            if (target)
+            {
+                //std::string chrNameLink = pPlayer->playerLink(target_name);
+                Map* cMap = target->GetMap();
+                uint32 instanceId = 0;
+                uint32 teleFlags = TELE_TO_GM_MODE;
+                InstancePlayerBind* bind = pPlayer->GetBoundInstance(target->GetMapId());
+
+                if (pPlayer->GetSmartInstanceBindingMode() && bind)
+                {
+                    instanceId = bind->state->GetInstanceId();
+                    pPlayer->UnbindInstance(target->GetMapId());
+                }
+
+                if (cMap->IsBattleGround())
+                {
+                    if (pPlayer->GetBattleGroundId() && pPlayer->GetBattleGroundId() != target->GetBattleGroundId())
+                    {
+                        //PSendSysMessage(LANG_CANNOT_GO_TO_BG_FROM_BG, chrNameLink.c_str());
+                        //SetSentErrorMessage(true);
+                        return false;
+                    }
+                    // all's well, set bg id
+                    // when porting out from the bg, it will be reset to 0
+                    if (pPlayer->GetBattleGroundId() != target->GetBattleGroundId())
+                    {
+                        pPlayer->SetBattleGroundId(target->GetBattleGroundId(), target->GetBattleGroundTypeId());
+                        teleFlags |= TELE_TO_FORCE_MAP_CHANGE;
+                    }
+
+                    // remember current position as entry point for return at bg end teleportation
+                    if (!pPlayer->GetMap()->IsBattleGround())
+                        pPlayer->SetBattleGroundEntryPoint(pPlayer, true);
+                }
+
+                // stop flight if need
+                if (pPlayer->IsTaxiFlying())
+                {
+                    pPlayer->GetMotionMaster()->MovementExpired();
+                    pPlayer->GetTaxi().ClearTaxiDestinations();
+                }
+                // save only in non-flight case
+                else
+                    pPlayer->SaveRecallPosition();
+
+                uint32 area_id;
+                WorldLocation loc;
+                pPlayer->GetPosition(loc);
+                area_id = pPlayer->GetAreaId();
+
+                pPlayer->SetHomebindToLocation(loc, area_id);
+
+                // To point to see at pTarget with same orientation
+                float x, y, z;
+                target->GetPosition(x, y, z);
+
+                pPlayer->RemoveAllAurasOnDeath();
+                pPlayer->TeleportTo(target->GetMapId(), x, y, z + 5.0f, pPlayer->GetAngle(target), teleFlags);
+                pPlayer->SetSpectate(true);
+                return true;
+            }
+        }
+    }
+    else if (sender == GOSSIP_SENDER_SPECTATE)
+    {
+        pPlayer->PlayerTalkClass->ClearMenus();
+        for (uint8 bgTypeId = BATTLEGROUND_NA1v1; bgTypeId <= BATTLEGROUND_DS5v5; ++bgTypeId)
+        {
+            for (BattleGroundSet::const_iterator it = sBattleGroundMgr.GetBattleGroundsBegin(BattleGroundTypeId(bgTypeId)); it != sBattleGroundMgr.GetBattleGroundsEnd(BattleGroundTypeId(bgTypeId)); ++it)
+            {
+                if (!it->first)
+                    continue;
+
+                BattleGroundQueueTypeId BgQueueTypeId = BattleGroundMgr::BgQueueTypeId(BattleGroundTypeId(bgTypeId));
+                BattleGround* bg = it->second;
+
+                if (!BgQueueTypeId)
+                    continue;
+
+                if (!bg)
+                    continue;
+
+                // Don't show Spectate menu if no bg is running
+                if (bg->GetStatus() == STATUS_WAIT_LEAVE)
+                    continue;
+
+                BattleGround::BattleGroundPlayerMap const& pPlayers = it->second->GetPlayers();
+                std::string playerName = "";
+                uint8 i = 0;
+                uint32 PlayerGuid = 0;
+                std::ostringstream ss;
+                ss << bg->GetName();
+
+                for (BattleGround::BattleGroundPlayerMap::const_iterator itr = pPlayers.begin(); itr != pPlayers.end(); ++itr)
+                {
+                    if (!itr->first)
+                        continue;
+
+                    if (sObjectMgr.GetPlayerNameByGUID(itr->first, playerName))
+                    {
+                        if (Player* plr = ObjectAccessor::FindPlayer(itr->first))
+                        {
+                            if (!plr)
+                                continue;
+
+                            ++i;
+
+                            PlayerGuid = itr->first;
+
+                            if (i > 1)
+                                ss << ",";
+
+                            ss << " " << playerName << " " << plr->GetSpecNameByTalentPoints().c_str() << "-" << GetClassString2(plr) << "";
+                        }
+                    }
+                }
+
+                if (PlayerGuid)
+                    pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, ss.str().c_str(), GOSSIP_SENDER_SPECTATE_MATCH, PlayerGuid);
+            }
+        }
+        pPlayer->SEND_GOSSIP_MENU(DEFAULT, pGameObject->GetObjectGuid());
+    }
+    else if (sender == GOSSIP_SENDER_ADMIN && pPlayer->GetSession()->GetSecurity() >= SEC_ADMINISTRATOR)
+    {
+        bool AllowItemSwap = sWorld.getConfig(CONFIG_BOOL_ARENA_ALLOW_ITEM_SWAP);
+        bool AllowTrinketSwap = sWorld.getConfig(CONFIG_BOOL_ARENA_ALLOW_TRINKET_SWAP);
+        switch (action)
+        {
+        case GOSSIP_ACTION_CONFIG_ARENA_ALLOW_ITEM_SWAP:
+            sWorld.setConfig(CONFIG_BOOL_ARENA_ALLOW_ITEM_SWAP, !AllowItemSwap);
+            break;
+        case GOSSIP_ACTION_CONFIG_ARENA_ALLOW_TRINKET_SWAP:
+            sWorld.setConfig(CONFIG_BOOL_ARENA_ALLOW_TRINKET_SWAP, !AllowTrinketSwap);
+            break;
+        }
+        GossipHello_ArenaMaster(pPlayer, pGameObject);
+    }
+    //GossipHello_ArenaMaster(pPlayer, pCreature);
+    return true;
+}
+
+enum TornadoEvents
+{
+    EVENT_KNOCK_BACK = 1,
+    EVENT_DESPAWN = 2,
+};
+
+struct npc_nagrand_tornado : public ScriptedAI
+{
+    npc_nagrand_tornado(Creature* pCreature) : ScriptedAI(pCreature)
+    {
+        m_events.Reset();
+        Reset();
+        afkplayers.clear();
+
+        m_events.ScheduleEvent(EVENT_DESPAWN, 60000);
+
+        if (SpellAuraHolder* pHolder = m_creature->AddAura(25160))
+            pHolder->RemoveAura(EFFECT_INDEX_0); // Remove the triggered dmg spell.
+    }
+
+    EventMap m_events;
+    std::unordered_map<ObjectGuid, time_t> afkplayers;
+
+    void Reset() override
+    {
+        m_creature->GetMotionMaster()->MovePoint(1, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), MOVE_PATHFINDING);
+        m_events.ScheduleEvent(EVENT_KNOCK_BACK, 2000);
+    }
+
+    void MovementInform(uint32 uiType, uint32 uiPointId) override
+    {
+        if (uiType != POINT_MOTION_TYPE)
+            return;
+
+        // Z 4044.42f , Y 2911.51f is the center of the nagrand arena
+        // Lets calculate a random waypoint in a 80 yard diameter circle.
+        int point = urand(1, 40);
+        float orientration = 0.492f;
+
+        float angle = (float(point) * (M_PI / (40 / 2)));
+        float x = 4056.0f + float(urand(5, 45)) * cos(angle);
+        float y = 2922.0f + float(urand(5, 45)) * sin(angle);
+        float z = 13.65f;
+        float new_z = m_creature->GetMap()->GetHeight(x, y, z, true, 1.0f);
+        if (new_z > INVALID_HEIGHT)
+            z = new_z + 0.05f;
+
+        /*
+        // Search for afking / drinking players? :p
+        std::list<Player*> players;
+        m_creature->GetAlivePlayerListInRange(m_creature, players, DEFAULT_VISIBILITY_DISTANCE);
+
+        for (const auto& pTarget : players)
+            if (!pTarget->IsMoving())
+            {
+                x = pTarget->GetPositionX();
+                y = pTarget->GetPositionY();
+                z = pTarget->GetPositionZ();
+                sLog.outBasic("[Arena:npc_nagrand_tornado] Player: %s is not moving since 10 seconds. Tornado is chasing him now.", pTarget->GetName());
+
+                break;
+            }
+            */
+        m_creature->GetMotionMaster()->MovePoint(uiPointId, x, y, z, MOVE_PATHFINDING + MOVE_WALK_MODE);
+    }
+
+    void UpdateAI(uint32 const diff) override
+    {
+        m_events.Update(diff);
+
+        while (uint32 Events = m_events.ExecuteEvent())
+        {
+            switch (Events)
+            {
+            case EVENT_KNOCK_BACK:
+            {
+                std::list<Player*> players;
+                m_creature->GetAlivePlayerListInRange(m_creature, players, ATTACK_DISTANCE);
+
+                for (const auto& pTarget : players)
+                {
+                    // TBC spell i guess: https://tbc.wowhead.com/spell=43120/cyclone
+                    // Clip: https://youtu.be/CJNQwBQh2Ms?t=148
+                    // Lowered the damage since its vanilla and players have less health and lower level players can also play arena.
+                    pTarget->KnockBackFrom(m_creature, 15, 10);
+                    float dmg = urand(((pTarget->GetMaxHealth() * 10.0f) / 100), ((pTarget->GetMaxHealth() * 15.0f) / 100));
+                    pTarget->DealDamage(pTarget, dmg, nullptr, SPELL_DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NATURE, nullptr, false);
+                }
+                m_events.ScheduleEvent(EVENT_KNOCK_BACK, 2000);
+                break;
+            }
+            case EVENT_DESPAWN:
+            {
+                m_creature->RemoveAurasDueToSpell(25160);
+                m_creature->DespawnOrUnsummon(4000);
+                break;
+            }
+            }
+        }
+    }
+};
+
+CreatureAI* GetAI_npc_nagrand_tornado(Creature* pCreature)
+{
+    return new npc_nagrand_tornado(pCreature);
+}
+
+
+bool GossipSelect_ArenaMaster_Ext(Player* pPlayer, GameObject* pGameObject, uint32 sender, uint32 action, const char* code)
+{
+    std::string name = code;
+    static const char* allowedcharacters = "1234567890";
+    if (!name.length() || (name.length() > 2) || name.find_first_not_of(allowedcharacters) != std::string::npos)
+    {
+        ChatHandler(pPlayer->GetSession()).PSendSysMessage("invalid number.");
+        pPlayer->CLOSE_GOSSIP_MENU();
+        return false;
+    }
+
+    uint32 value = atoi(code);
+
+    if (sender == GOSSIP_SENDER_ADMIN && value && pPlayer->GetSession()->GetSecurity() >= SEC_ADMINISTRATOR)
+    {
+        switch (action)
+        {
+        case GOSSIP_ACTION_CONFIG_ARENA_MAX_ITEMLEVEL:
+            sWorld.setConfig(CONFIG_UINT32_ARENA_MAX_ITEMLEVEL, value);
+            break;
+        case GOSSIP_ACTION_CONFIG_ARENA_MAX_ITEMPATCH:
+            sWorld.setConfig(CONFIG_UINT32_ARENA_MAX_ITEMPATCH, value);
+            break;
+        }
+        GossipHello_ArenaMaster(pPlayer, pGameObject);
+    }
+    //GossipHello_ArenaMaster(pPlayer, pCreature);
+    return true;
+}
+
+bool GossipHello_ArenaAnnouncer(Player* pPlayer, Creature* pCreature)
+{
+    if (!pPlayer)
+        return false;
+
+    pPlayer->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_INTERACTING_CANCELS);
+    //pPlayer->SetFaction();
+    //pPlayer->GetSession()->SendNotification("You are already in a Queue!");
+    pPlayer->SEND_GOSSIP_MENU(ARENA_ANNOUNCER, pCreature->GetObjectGuid());
+    return true;
+
+}
+
+#define GOSSIP_ACTION_READY 1
+#define GOSSIP_ACTION_LEAVE 2
+#define GOSSIP_ACTION_CONFIRM_LEAVE 3
+#define NPC_TEXT_HELLO 800100
+#define NPC_TEXT_SELECT 800101
+
+bool GossipHello_npc_arena_watcher(Player* pPlayer, Creature* pCreature)
+{
+    if (!pPlayer || !pCreature)
+        return false;
+
+    if (!pCreature->InArena())
+        return false;
+
+    if (!pPlayer->HasAura(SPELL_ALLIANCE_FLAG) && !pPlayer->HasAura(SPELL_HORDE_FLAG))
+        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "I'm ready!\n\n", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_READY);
+
+
+    pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Can i leave please?", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_LEAVE);
+
+    pPlayer->SEND_GOSSIP_MENU(NPC_TEXT_HELLO, pCreature->GetObjectGuid());
+    return true;
+}
+
+bool GossipSelect_npc_arena_watcher(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction)
+{
+    if (!pPlayer || !pCreature)
+        return false;
+
+    if (!pCreature->InArena())
+        return false;
+
+    pPlayer->PlayerTalkClass->ClearMenus();
+
+    switch (uiAction)
+    {
+    case GOSSIP_ACTION_READY:
+    {
+        switch (pPlayer->GetBGTeamId())
+        {
+        case TEAM_ALLIANCE:
+            pPlayer->AddAura(SPELL_ALLIANCE_FLAG);
+            break;
+        case TEAM_HORDE:
+            pPlayer->AddAura(SPELL_HORDE_FLAG);
+            break;
+        }
+        pPlayer->PlayDirectSound(8960, pPlayer);
+
+        uint32 maxplayers_ALLIANCE = 0;
+        uint32 maxplayers_HORDE = 0;
+
+        Map::PlayerList const& PlayerList = pCreature->GetMap()->GetPlayers();
+        for (Map::PlayerList::const_iterator itr = PlayerList.begin(); itr != PlayerList.end(); ++itr)
+        {
+            Player* pPlayer = itr->getSource();
+
+            if (!pPlayer)
+                continue;
+
+            if (pPlayer->HasAura(SPELL_ALLIANCE_FLAG))
+                ++maxplayers_ALLIANCE;
+
+            if (pPlayer->HasAura(SPELL_HORDE_FLAG))
+                ++maxplayers_HORDE;
+        }
+
+        std::string announce;
+
+        BattleGround* bg = nullptr;
+        bg = sBattleGroundMgr.GetBattleGroundTemplate(BattleGroundTypeId(pPlayer->GetBattleGroundTypeId()));
+
+        if (bg)
+        {
+            if (maxplayers_HORDE + maxplayers_ALLIANCE == bg->GetMaxPlayers())
+                announce = "Both Teams are ready to fight!";
+            else if (maxplayers_HORDE == bg->GetMaxPlayersPerTeam())
+                announce = "The Horde is ready to fight!";
+            else if (maxplayers_ALLIANCE == bg->GetMaxPlayersPerTeam())
+                announce = "The Alliance is ready to fight!";
+
+            if (!announce.empty())
+            {
+                pCreature->MonsterYell(announce.c_str());
+                pCreature->HandleEmoteCommand(EMOTE_ONESHOT_SHOUT);
+            }
+        }
+        pPlayer->CLOSE_GOSSIP_MENU();
+    }
+    break;
+    case GOSSIP_ACTION_LEAVE:
+    {
+        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Yes im sure.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_CONFIRM_LEAVE);
+        pPlayer->SEND_GOSSIP_MENU(NPC_TEXT_SELECT, pCreature->GetObjectGuid());
+    }
+    break;
+    case GOSSIP_ACTION_CONFIRM_LEAVE:
+    {
+        pPlayer->LeaveBattleground();
+        pPlayer->CLOSE_GOSSIP_MENU();
+    }
+    break;
+    }
+    return true;
+}
+
 void AddSC_custom_creatures()
 {
     Script* newscript;
@@ -1191,5 +2566,28 @@ void AddSC_custom_creatures()
     newscript = new Script;
     newscript->Name = "custom_npc_summon_debugAI";
     newscript->GetAI = &GetAI_custom_summon_debug;
+    newscript->RegisterSelf(false);
+
+    newscript = new Script;
+    newscript->Name = "custom_gobj_arena_master";
+    newscript->pGOGossipHello = &GossipHello_ArenaMaster;
+    newscript->pGOGossipSelect = &GossipSelect_ArenaMaster;
+    newscript->pGOGossipSelectWithCode = &GossipSelect_ArenaMaster_Ext;
+    newscript->RegisterSelf(false);
+
+    newscript = new Script;
+    newscript->Name = "custom_npc_arena_announcer";
+    newscript->pGossipHello = &GossipHello_ArenaAnnouncer;
+    newscript->RegisterSelf(false);
+
+    newscript = new Script;
+    newscript->Name = "custom_npc_arena_watcher";
+    newscript->pGossipHello = &GossipHello_npc_arena_watcher;
+    newscript->pGossipSelect = &GossipSelect_npc_arena_watcher;
+    newscript->RegisterSelf(false);
+
+    newscript = new Script;
+    newscript->Name = "custom_npc_nagrand_tornado";
+    newscript->GetAI = &GetAI_npc_nagrand_tornado;
     newscript->RegisterSelf(false);
 }

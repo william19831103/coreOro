@@ -15,7 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-set (game_SRCS 
+set (game_SRCS
     AccountMgr.cpp
     AuraRemovalMgr.cpp
     AutoBroadCastMgr.cpp
@@ -75,6 +75,7 @@ set (game_SRCS
     Battlegrounds/BattleGroundAV.cpp
     Battlegrounds/BattleGroundMgr.cpp
     Battlegrounds/BattleGroundWS.cpp
+    Battlegrounds/Arena.cpp
     Chat/Channel.cpp
     Chat/ChannelMgr.cpp
     Chat/Chat.cpp
@@ -280,6 +281,7 @@ set (game_SRCS
     Battlegrounds/BattleGroundAV.h
     Battlegrounds/BattleGroundMgr.h
     Battlegrounds/BattleGroundWS.h
+    Battlegrounds/Arena.h
     Chat/Channel.h
     Chat/ChannelMgr.h
     Chat/Chat.h

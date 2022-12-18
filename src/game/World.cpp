@@ -1158,6 +1158,12 @@ void World::LoadConfigSettings(bool reload)
 
     setConfig(CONFIG_UINT32_CREATURE_SUMMON_LIMIT, "MaxCreatureSummonLimit", DEFAULT_CREATURE_SUMMON_LIMIT);
 
+    // Arena
+    setConfig(CONFIG_UINT32_ARENA_MAX_ITEMLEVEL, "Arena.MaxItemLevel", 92);
+    setConfig(CONFIG_UINT32_ARENA_MAX_ITEMPATCH, "Arena.MaxItemPatch", 10);
+    setConfig(CONFIG_BOOL_ARENA_ALLOW_ITEM_SWAP, "Arena.AllowItemSwap", false);
+    setConfig(CONFIG_BOOL_ARENA_ALLOW_TRINKET_SWAP, "Arena.AllowTrinketSwap", true);
+
     // Smartlog data
     sLog.InitSmartlogEntries(sConfig.GetStringDefault("Smartlog.ExtraEntries", ""));
     sLog.InitSmartlogGuids(sConfig.GetStringDefault("Smartlog.ExtraGuids", ""));
@@ -1780,6 +1786,10 @@ void World::SetInitialWorldSettings()
     sSpellMgr.LoadSpellGroupStackRules();
 
     sObjectMgr.LoadPlayerPremadeTemplates();
+
+    // Arena: Disabled spells.
+    sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "Loading disabled arena spells ...");
+    sObjectMgr.LoadDisabledArenaSpells();
 
     if (getConfig(CONFIG_BOOL_RESTORE_DELETED_ITEMS))
     {

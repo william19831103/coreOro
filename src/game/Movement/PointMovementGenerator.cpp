@@ -287,7 +287,7 @@ void ChargeMovementGenerator<T>::ComputePath(T& attacker, Unit& victim)
         victim.ToPlayer() : nullptr;
 
     // Improved path to victim future estimated position
-    if (victimPlayer && victimPlayer->IsMoving() && victimPlayer->IsMovedByPlayer())
+    if (victimPlayer && victimPlayer->IsMoving() && victimPlayer->IsMovedByPlayer() && !victimPlayer->InDalaranArena()) // Players falling underneath the map in Dalaran Arena sometimes. Little Fix.
     {
         // We need to account for:
         // 1. Time for stun aura to be applied (spell batching)

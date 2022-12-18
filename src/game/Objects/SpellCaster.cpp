@@ -739,6 +739,17 @@ int32 SpellCaster::DealHeal(Unit* pVictim, uint32 addhealth, SpellEntry const* s
     if (IsCreature() && ((Creature*)this)->IsTotem() && ((Totem*)this)->GetTotemType() != TOTEM_STATUE)
         pHealer = pUnit->GetOwner();
 
+    // Arena: healing done
+    if (pHealer)
+    {
+        if (Player* player = pHealer->ToPlayer())
+        {
+            if (BattleGround* bg = player->GetBattleGround())
+                if (bg->GetStatus() == STATUS_IN_PROGRESS)
+                    bg->UpdatePlayerScore(player, SCORE_HEALING_DONE, gain);
+        }
+    }
+
     if (IsPlayer() || pVictim->IsPlayer())
         pHealer->SendHealSpellLog(pVictim, spellProto->Id, addhealth, critical);
 

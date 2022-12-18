@@ -3022,6 +3022,86 @@ void Player::SetGMChat(bool on, bool notify)
     }
 }
 
+// Arena.
+void Player::SetSpectate(bool on)
+{
+    if (on)
+    {
+        ResurrectPlayer(false);
+        RemoveAllAuras();
+        SpawnCorpseBones();
+        // Set invisible.
+        SetVisibility(VISIBILITY_OFF);
+
+        // Remove Player Model.
+        SetDisplayId(11686);
+        // Remove Weapon Models.
+        SetVisibleItemSlot(EQUIPMENT_SLOT_MAINHAND, nullptr);
+        SetVisibleItemSlot(EQUIPMENT_SLOT_OFFHAND, nullptr);
+        SetVisibleItemSlot(EQUIPMENT_SLOT_RANGED, nullptr);
+
+        // Higher run speed.
+        SetSpeedRate(MOVE_RUN, 2.0);
+        //spectatorFlag = true;
+
+        m_ExtraFlags |= PLAYER_EXTRA_GM_ON;
+        SetFactionTemplateId(35);
+
+        if (Pet* pet = GetPet())
+        {
+            RemovePet(PET_SAVE_AS_CURRENT);
+        }
+        UnsummonPetTemporaryIfAny();
+        CallForAllControlledUnits(SetGameMasterOnHelper(), CONTROLLED_PET | CONTROLLED_TOTEMS | CONTROLLED_GUARDIANS | CONTROLLED_CHARM);
+
+        RemoveByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP);
+        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+        SetFFAPvP(false);
+        UpdatePvPContested(false, true);
+
+        GetHostileRefManager().setOnlineOfflineState(false);
+        CombatStopWithPets();
+    }
+    else
+    {
+        SetVisibility(VISIBILITY_ON);
+
+        InitPlayerDisplayIds();
+
+        if (Item* nSlot = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
+            SetVisibleItemSlot(EQUIPMENT_SLOT_MAINHAND, nSlot);
+
+        if (Item* nSlot = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND))
+            SetVisibleItemSlot(EQUIPMENT_SLOT_OFFHAND, nSlot);
+
+        if (Item* nSlot = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_RANGED))
+            SetVisibleItemSlot(EQUIPMENT_SLOT_RANGED, nSlot);
+
+        m_ExtraFlags &= ~PLAYER_EXTRA_GM_ON;
+        SetFactionForRace(GetRace());
+        RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_GM);
+        RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+
+        //if (spectateFrom)
+        //	SetViewpoint(spectateFrom, false);
+
+        // restore FFA PvP Server state
+        if (sWorld.IsFFAPvPRealm())
+            SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP);
+
+        // restore FFA PvP area state, remove not allowed for GM mounts
+        UpdateArea(m_areaUpdateId);
+
+        GetHostileRefManager().setOnlineOfflineState(true);
+        //spectateCanceled = false;
+        //spectatorFlag = false;
+        UpdateSpeed(MOVE_RUN, true);
+    }
+    //m_camera.UpdateVisibilityForOwner();
+    UpdateObjectVisibility();
+    //UpdateForQuestWorldObjects();
+}
+
 void Player::SetGameMaster(bool on, bool notify)
 {
     if (on)
@@ -5066,7 +5146,7 @@ Corpse* Player::CreateCorpse()
         flags |= CORPSE_FLAG_HIDE_HELM;
     if (HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_CLOAK))
         flags |= CORPSE_FLAG_HIDE_CLOAK;
-    if (InBattleGround())
+    if (InBattleGround() && !InArena())
         flags |= CORPSE_FLAG_LOOTABLE;                      // to be able to remove insignia
     corpse->SetUInt32Value(CORPSE_FIELD_FLAGS, flags);
 
@@ -10038,6 +10118,37 @@ InventoryResult Player::CanEquipItem(uint8 slot, uint16& dest, Item* pItem, bool
 
             uint32 type = pProto->InventoryType;
 
+            // Arena: item switch restriction start.
+            if (InArena())
+            {
+                if (GetVisibility() == VISIBILITY_OFF)
+                    return EQUIP_ERR_CANT_DO_RIGHT_NOW;
+
+                bool allowSwap = sWorld.getConfig(CONFIG_BOOL_ARENA_ALLOW_ITEM_SWAP);
+                bool allowTrinketSwap = sWorld.getConfig(CONFIG_BOOL_ARENA_ALLOW_TRINKET_SWAP);
+
+                /*
+                std::unique_ptr<QueryResult> getitem(WorldDatabase.PQuery("SELECT item FROM auctionhousebot WHERE item = '%u';", pItem->GetEntry()));
+                if (!getitem)
+                    return EQUIP_ERR_CANT_DO_RIGHT_NOW;
+                */
+
+                // Allow equip Items if slot is empty or swapping is enabled in arenas.
+                uint32 type = pProto->InventoryType;
+                if (GetBattleGround()->GetStatus() == STATUS_IN_PROGRESS)
+                {
+                    // Only allow Mainhand, Offhand, Ranged and Trinket Slot.
+                    if (!allowSwap && GetItemByPos(INVENTORY_SLOT_BAG_0, FindEquipSlot(pProto, eslot, swap)))
+                        if (type != INVTYPE_TRINKET && type != INVTYPE_WEAPON && type != INVTYPE_WEAPONMAINHAND && type != INVTYPE_WEAPONOFFHAND && type != INVTYPE_2HWEAPON && type != INVTYPE_SHIELD && type != INVTYPE_HOLDABLE && type != INVTYPE_RANGEDRIGHT && type != INVTYPE_RANGED)
+                            return EQUIP_ERR_CANT_DO_RIGHT_NOW;
+
+                    // Trinkets.
+                    if (!allowTrinketSwap)
+                        if (type == INVTYPE_TRINKET)
+                            return EQUIP_ERR_CANT_DO_RIGHT_NOW;
+                }
+            }
+
             if (eslot == EQUIPMENT_SLOT_OFFHAND)
             {
                 if (type == INVTYPE_WEAPON || type == INVTYPE_WEAPONOFFHAND)
@@ -10114,6 +10225,23 @@ InventoryResult Player::CanUnequipItem(uint16 pos, bool swap) const
     // Check is possibly not in vanilla.
     //if (IsNonMeleeSpellCasted(false, true, true))
     //    return EQUIP_ERR_CANT_DO_RIGHT_NOW;
+
+    // Arena
+    if (InArena())
+    {
+        if (GetVisibility() == VISIBILITY_OFF)
+            return EQUIP_ERR_CANT_DO_RIGHT_NOW;
+
+        bool allowSwap = sWorld.getConfig(CONFIG_BOOL_ARENA_ALLOW_ITEM_SWAP);
+
+        uint32 type = pProto->InventoryType;
+        BattleGround* bg = ((Player*)this)->GetBattleGround();
+        if (bg && bg->GetStatus() == STATUS_IN_PROGRESS && !allowSwap)
+        {
+            if (type != INVTYPE_WEAPON && type != INVTYPE_WEAPONMAINHAND && type != INVTYPE_WEAPONOFFHAND && type != INVTYPE_2HWEAPON && type != INVTYPE_SHIELD && type != INVTYPE_HOLDABLE && type != INVTYPE_RANGEDRIGHT && type != INVTYPE_RANGED)
+                return EQUIP_ERR_CANT_DO_RIGHT_NOW;
+        }
+    }
 
     return EQUIP_ERR_OK;
 }
@@ -10371,6 +10499,13 @@ InventoryResult Player::CanUseItem(ItemPrototype const* pProto, bool not_loading
 
         if (GetLevel() < pProto->RequiredLevel)
             return EQUIP_ERR_CANT_EQUIP_LEVEL_I;
+
+        // Arena.
+        if (InArena())
+        {
+            if (((Player*)this)->IsForbiddenArenaItem(pProto, GetBattleGroundTypeId()))
+                return EQUIP_ERR_CANT_DO_RIGHT_NOW;
+        }
 
         return EQUIP_ERR_OK;
     }
@@ -10688,6 +10823,192 @@ Item* Player::EquipItem(uint16 pos, Item* pItem, bool update)
     }
 
     return pItem;
+}
+
+std::string Player::GetPatchName(uint8 patch)
+{
+    switch (patch)
+    {
+    case 0:
+        return "Patch 1.2: Mysteries of Maraudon";
+    case 1:
+        return "Patch 1.3: Ruins of the Dire Maul";
+    case 2:
+        return "Patch 1.4: The Call to War";
+    case 3:
+        return "Patch 1.5: Battlegrounds";
+    case 4:
+        return "Patch 1.6: Assault on Blackwing Lair";
+    case 5:
+        return "Patch 1.7: Rise of the Blood God";
+    case 6:
+        return "Patch 1.8: Dragons of Nightmare";
+    case 7:
+        return "Patch 1.9: The Gates of Ahn'Qiraj";
+    case 8:
+        return "Patch 1.10: Storms of Azeroth";
+    case 9:
+        return "Patch 1.11: Shadow of the Necropolis";
+    case 10:
+        return "Patch 1.12: Drums of War";
+    }
+
+    return "Invalid Patch!";
+}
+
+// UterusOne: Arena: Check items that are not allowed.
+void Player::UnequipForbiddenArenaItems(BattleGroundTypeId bgTypeId)
+{
+    if (!bgTypeId)
+        return;
+
+    for (uint8 i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; i++)
+    {
+        if (i == EQUIPMENT_SLOT_TABARD || i == EQUIPMENT_SLOT_BODY)
+            continue;
+
+        if (Item* haveItemEquipped = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
+            if (haveItemEquipped)
+            {
+                if (ItemPrototype const* pProto = haveItemEquipped->GetProto())
+                {
+                    if (IsForbiddenArenaItem(pProto, bgTypeId))
+                        AutoUnequipItemFromSlot(i);
+                }
+            }
+        }
+    }
+}
+
+bool Player::HasForbiddenArenaItems(BattleGroundTypeId bgTypeId)
+{
+    if (!bgTypeId)
+        return false;
+
+    bool istrue = false;
+
+    for (uint8 i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; i++)
+    {
+        if (i == EQUIPMENT_SLOT_TABARD || i == EQUIPMENT_SLOT_BODY)
+            continue;
+
+        if (Item* haveItemEquipped = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
+            if (haveItemEquipped)
+            {
+                if (ItemPrototype const* pProto = haveItemEquipped->GetProto())
+                {
+                    if (IsForbiddenArenaItem(pProto, bgTypeId))
+                        istrue = true;
+                }
+            }
+        }
+    }
+
+    if (istrue)
+        return true;
+
+    return false;
+}
+
+bool Player::IsForbiddenArenaItem(ItemPrototype const* item_proto, BattleGroundTypeId bgTypeId)
+{
+    uint32 maxilvl = 92;
+    uint32 maxpatch = 10; // Patch 1.12
+    maxilvl = sWorld.getConfig(CONFIG_UINT32_ARENA_MAX_ITEMLEVEL);
+    maxpatch = sWorld.getConfig(CONFIG_UINT32_ARENA_MAX_ITEMPATCH);
+
+#define COLOR_RED       "ff726f"
+#define COLOR_BLUE      "71d5ff"
+#define DO_COLOR(a, b)  "|cff" a "" b "|r"
+
+    if (item_proto)
+    {
+        // Check max item patch.
+        std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("SELECT MIN(patch) AS 'patch' "
+            "FROM item_template WHERE entry = '%u';", item_proto->ItemId));
+        if (result)
+        {
+            Field* fields = result->Fetch();
+            uint32 patch = fields[0].GetUInt32();
+            if (patch && maxpatch && patch > maxpatch)
+            {
+                ChatHandler(this).PSendSysMessage("%s is from " DO_COLOR(COLOR_RED, "%s") ", allowed are items from " DO_COLOR(COLOR_BLUE, "%s") " and below.",
+                    ChatHandler(this).GetItemLink(item_proto).c_str(), GetPatchName(patch).c_str(), GetPatchName(maxpatch).c_str());
+                return true;
+            }
+        }
+        // Check max item level.
+        if (item_proto->ItemLevel > maxilvl)
+        {
+            ChatHandler(this).PSendSysMessage("%s has item level " DO_COLOR(COLOR_RED, "%u") ", allowed is: " DO_COLOR(COLOR_BLUE, "%u") ".",
+                ChatHandler(this).GetItemLink(item_proto).c_str(), item_proto->ItemLevel, maxilvl);
+            return true;
+        }
+        // Check forbidden spells on items.
+        for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
+        {
+            uint32 spellid = item_proto->Spells[i].SpellId;
+            SpellEntry const* spellProto = sSpellMgr.GetSpellEntry(spellid);
+            if (!spellProto)
+                continue;
+
+            auto itr = sObjectMgr.GetDisabledArenaSpellsTemplate().find(spellid);
+            if (itr != sObjectMgr.GetDisabledArenaSpellsTemplate().end())
+            {
+                MapEntry const* mapEntry = sMapStorage.LookupEntry<MapEntry>(GetBattleGrounMapIdByTypeId(bgTypeId));
+                std::ostringstream ss;
+                ss << "|cffffffff|Harea:" << mapEntry->id << "|h[" << mapEntry->name << "]|h|r";
+
+                switch (bgTypeId)
+                {
+                case BATTLEGROUND_NA1v1:
+                case BATTLEGROUND_BE1v1:
+                case BATTLEGROUND_RL1v1:
+                case BATTLEGROUND_DS1v1:
+                    if (itr->second.onevsone)
+                    {
+                        ChatHandler(this).PSendSysMessage("%s is not allowed in 1v1, %s.", ChatHandler(this).GetItemLink(item_proto).c_str(), ss.str().c_str());
+                        return true;
+                    }
+                    break;
+                case BATTLEGROUND_NA2v2:
+                case BATTLEGROUND_BE2v2:
+                case BATTLEGROUND_RL2v2:
+                case BATTLEGROUND_DS2v2:
+                    if (itr->second.twovstwo)
+                    {
+                        ChatHandler(this).PSendSysMessage("%s is not allowed in 2v2, %s.", ChatHandler(this).GetItemLink(item_proto).c_str(), ss.str().c_str());
+                        return true;
+                    }
+                    break;
+                case BATTLEGROUND_NA3v3:
+                case BATTLEGROUND_BE3v3:
+                case BATTLEGROUND_RL3v3:
+                case BATTLEGROUND_DS3v3:
+                    if (itr->second.threevsthree)
+                    {
+                        ChatHandler(this).PSendSysMessage("%s is not allowed in 3v3, %s.", ChatHandler(this).GetItemLink(item_proto).c_str(), ss.str().c_str());
+                        return true;
+                    }
+                    break;
+                case BATTLEGROUND_NA5v5:
+                case BATTLEGROUND_BE5v5:
+                case BATTLEGROUND_RL5v5:
+                case BATTLEGROUND_DS5v5:
+                    if (itr->second.fivevsfive)
+                    {
+                        ChatHandler(this).PSendSysMessage("%s is not allowed in 5v5, %s.", ChatHandler(this).GetItemLink(item_proto).c_str(), ss.str().c_str());
+                        return true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 void Player::QuickEquipItem(uint16 pos, Item* pItem)
@@ -18765,7 +19086,11 @@ void Player::LeaveBattleground(bool teleportToEntryPoint)
             if (IsBeingTeleportedFar())
                 ScheduleDelayedOperation(DELAYED_SPELL_CAST_DESERTER);
             else
-                AddAura(26013, 0, this);               // Deserter
+            {
+                // Arena
+                if (!InArena())
+                    AddAura(26013, 0, this);               // Deserter
+            }
         }
         bg->RemovePlayerAtLeave(GetObjectGuid(), teleportToEntryPoint, true);
         sLog.Out(LOG_BG, LOG_LVL_DETAIL, "[%u,%u]: %s:%u [%u:%s] leaves",
@@ -20200,6 +20525,9 @@ void Player::SendCorpseReclaimDelay(bool load) const
     if (!corpse)
         return;
 
+    if (InArena())
+        ((Player*)this)->SetSpectate(true);
+
     uint32 delay;
     if (load)
     {
@@ -20706,6 +21034,413 @@ void Player::HandleFall(MovementInfo const& movementInfo)
             sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "FALLDAMAGE z=%f sz=%f pZ=%f FallTime=%d mZ=%f damage=%d SF=%d" , movementInfo.GetPos().z, height, GetPositionZ(), movementInfo.GetFallTime(), height, damage, safe_fall);
         }
     }
+}
+
+std::string Player::GetSpecNameByTalentPoints()
+{
+    uint32 curtalent_spent = 0;
+    uint32 WarriorProtectionPoints = 0;
+    uint32 WarriorFuryPoints = 0;
+    uint32 WarriorArmsPoints = 0;
+    uint32 WarlockDemonologyPoints = 0;
+    uint32 WarlockDestructionPoints = 0;
+    uint32 WarlockAfflictionPoints = 0;
+    uint32 ShamanRestorationPoints = 0;
+    uint32 ShamanEnhancementPoints = 0;
+    uint32 ShamanElementalCombatPoints = 0;
+    uint32 RogueSubtletyPoints = 0;
+    uint32 RogueCombatPoints = 0;
+    uint32 RogueAssassinationPoints = 0;
+    uint32 PriestShadowPoints = 0;
+    uint32 PriestHolyPoints = 0;
+    uint32 PriestDisciplinePoints = 0;
+    uint32 PaladinProtectionPoints = 0;
+    uint32 PaladinHolyPoints = 0;
+    uint32 PaladinRetributionPoints = 0;
+    uint32 MageFrostPoints = 0;
+    uint32 MageFirePoints = 0;
+    uint32 MageArcanePoints = 0;
+    uint32 HunterSurvivalPoints = 0;
+    uint32 HunterMarksmanshipPoints = 0;
+    uint32 HunterBeastMasteryPoints = 0;
+    uint32 DruidRestorationPoints = 0;
+    uint32 DruidFeralCombatPoints = 0;
+    uint32 DruidBalancePoints = 0;
+
+    for (uint32 i = 1; i < sTalentStore.GetNumRows(); ++i)
+    {
+        TalentEntry const* talentInfo = sTalentStore.LookupEntry(i);
+        if (!talentInfo) continue;
+
+        TalentTabEntry const* talentTabInfo = sTalentTabStore.LookupEntry(talentInfo->TalentTab);
+        if (!talentTabInfo)
+            continue;
+
+        if (talentTabInfo->ClassMask != GetClassMask())
+            continue;
+
+        uint32 spentPoints = 0;
+        for (int j = 0; j < MAX_TALENT_RANK; ++j)
+        {
+            if (talentInfo->RankID[j] != 0)
+            {
+                switch (talentInfo->TalentTab)
+                {
+                    //  WARRIOR
+
+                case WarriorProtection:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == WarriorProtection)
+                    {
+                        spentPoints += j + 1;
+                        WarriorProtectionPoints += spentPoints;
+                    }
+                    break;
+                case WarriorFury:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == WarriorFury)
+                    {
+                        spentPoints += j + 1;
+                        WarriorFuryPoints += spentPoints;
+                    }
+                    break;
+                case WarriorArms:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == WarriorArms)
+                    {
+                        spentPoints += j + 1;
+                        WarriorArmsPoints += spentPoints;
+                    }
+                    break;
+
+                    //  WARLOCK
+
+                case WarlockDemonology:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == WarlockDemonology)
+                    {
+                        spentPoints += j + 1;
+                        WarlockDemonologyPoints += spentPoints;
+                    }
+                    break;
+                case WarlockDestruction:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == WarlockDestruction)
+                    {
+                        spentPoints += j + 1;
+                        WarlockDestructionPoints += spentPoints;
+                    }
+                    break;
+                case WarlockAffliction:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == WarlockAffliction)
+                    {
+                        spentPoints += j + 1;
+                        WarlockAfflictionPoints += spentPoints;
+                    }
+                    break;
+
+                    //  SHAMAN
+
+                case ShamanElementalCombat:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == ShamanElementalCombat)
+                    {
+                        spentPoints += j + 1;
+                        ShamanElementalCombatPoints += spentPoints;
+                    }
+                    break;
+                case ShamanEnhancement:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == ShamanEnhancement)
+                    {
+                        spentPoints += j + 1;
+                        ShamanEnhancementPoints += spentPoints;
+                    }
+                    break;
+                case ShamanRestoration:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == ShamanRestoration)
+                    {
+                        spentPoints += j + 1;
+                        ShamanRestorationPoints += spentPoints;
+                    }
+                    break;
+
+                    //  ROGUE
+
+                case RogueAssassination:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == RogueAssassination)
+                    {
+                        spentPoints += j + 1;
+                        RogueAssassinationPoints += spentPoints;
+                    }
+                    break;
+                case RogueCombat:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == RogueCombat)
+                    {
+                        spentPoints += j + 1;
+                        RogueCombatPoints += spentPoints;
+                    }
+                    break;
+                case RogueSubtlety:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == RogueSubtlety)
+                    {
+                        spentPoints += j + 1;
+                        RogueSubtletyPoints += spentPoints;
+                    }
+                    break;
+
+                    //  PRIEST
+
+                case PriestDiscipline:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == PriestDiscipline)
+                    {
+                        spentPoints += j + 1;
+                        PriestDisciplinePoints += spentPoints;
+                    }
+                    break;
+                case PriestHoly:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == PriestHoly)
+                    {
+                        spentPoints += j + 1;
+                        PriestHolyPoints += spentPoints;
+                    }
+                    break;
+                case PriestShadow:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == PriestShadow)
+                    {
+                        spentPoints += j + 1;
+                        PriestShadowPoints += spentPoints;
+                    }
+                    break;
+
+                    //  PALADIN
+
+                case PaladinHoly:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == PaladinHoly)
+                    {
+                        spentPoints += j + 1;
+                        PaladinHolyPoints += spentPoints;
+                    }
+                    break;
+                case PaladinProtection:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == PaladinProtection)
+                    {
+                        spentPoints += j + 1;
+                        PaladinProtectionPoints += spentPoints;
+                    }
+                    break;
+                case PaladinRetribution:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == PaladinRetribution)
+                    {
+                        spentPoints += j + 1;
+                        PaladinRetributionPoints += spentPoints;
+                    }
+                    break;
+
+                    //  MAGE
+
+                case MageArcane:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == MageArcane)
+                    {
+                        spentPoints += j + 1;
+                        MageArcanePoints += spentPoints;
+                    }
+                    break;
+                case MageFire:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == MageFire)
+                    {
+                        spentPoints += j + 1;
+                        MageFirePoints += spentPoints;
+                    }
+                    break;
+                case MageFrost:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == MageFrost)
+                    {
+                        spentPoints += j + 1;
+                        MageFrostPoints += spentPoints;
+                    }
+                    break;
+
+                    //  HUNTER
+
+                case HunterBeastMastery:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == HunterBeastMastery)
+                    {
+                        spentPoints += j + 1;
+                        HunterBeastMasteryPoints += spentPoints;
+                    }
+                    break;
+                case HunterMarksmanship:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == HunterMarksmanship)
+                    {
+                        spentPoints += j + 1;
+                        HunterMarksmanshipPoints += spentPoints;
+                    }
+                    break;
+                case HunterSurvival:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == HunterSurvival)
+                    {
+                        spentPoints += j + 1;
+                        HunterSurvivalPoints += spentPoints;
+                    }
+                    break;
+
+                    //  DRUID
+
+                case DruidBalance:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == DruidBalance)
+                    {
+                        spentPoints += j + 1;
+                        DruidBalancePoints += spentPoints;
+                    }
+                    break;
+                case DruidFeralCombat:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == DruidFeralCombat)
+                    {
+                        spentPoints += j + 1;
+                        DruidFeralCombatPoints += spentPoints;
+                    }
+                    break;
+                case DruidRestoration:
+                    if (HasSpell(talentInfo->RankID[j]) && talentInfo->TalentTab == DruidRestoration)
+                    {
+                        spentPoints += j + 1;
+                        DruidRestorationPoints += spentPoints;
+                    }
+                    break;
+                }
+            }
+        }
+
+        /* for debugging
+        std::ostringstream ss;
+        ss << "talentpoints spent " << talentInfo->TalentTab << " / " << curtalent_spent << " / " << spentPoints << ".";
+        ChatHandler(GetSession()).PSendSysMessage(ss.str().c_str());
+        */
+    }
+
+    std::string Specification = "Undefined";
+
+    //WARRIOR
+    if (WarriorProtectionPoints > WarriorFuryPoints && WarriorProtectionPoints > WarriorArmsPoints)
+    {
+        Specification = "Protection";
+    }
+    else if (WarriorFuryPoints > WarriorProtectionPoints && WarriorFuryPoints > WarriorArmsPoints)
+    {
+        Specification = "Fury";
+    }
+    else if (WarriorArmsPoints > WarriorFuryPoints && WarriorArmsPoints > WarriorProtectionPoints)
+    {
+        Specification = "Arms";
+    }
+
+    //WARLOCK
+    if (WarlockAfflictionPoints > WarlockDemonologyPoints && WarlockAfflictionPoints > WarlockDestructionPoints)
+    {
+        Specification = "Affliction";
+    }
+    else if (WarlockDemonologyPoints > WarlockAfflictionPoints && WarlockDemonologyPoints > WarlockDestructionPoints)
+    {
+        Specification = "Demonology";
+    }
+    else if (WarlockDestructionPoints > WarlockDemonologyPoints && WarlockDestructionPoints > WarlockAfflictionPoints)
+    {
+        Specification = "Destruction";
+    }
+
+    //SHAMAN
+    if (ShamanElementalCombatPoints > ShamanEnhancementPoints && ShamanElementalCombatPoints > ShamanRestorationPoints)
+    {
+        Specification = "Elemental";
+    }
+    else if (ShamanEnhancementPoints > ShamanElementalCombatPoints && ShamanEnhancementPoints > ShamanRestorationPoints)
+    {
+        Specification = "Enhancement";
+    }
+    else if (ShamanRestorationPoints > ShamanEnhancementPoints && ShamanRestorationPoints > ShamanElementalCombatPoints)
+    {
+        Specification = "Restoration";
+    }
+
+    //ROGUE
+    if (RogueAssassinationPoints > RogueCombatPoints && RogueAssassinationPoints > RogueSubtletyPoints)
+    {
+        Specification = "Assassination";
+    }
+    else if (RogueCombatPoints > RogueAssassinationPoints && RogueCombatPoints > RogueSubtletyPoints)
+    {
+        Specification = "Combat";
+    }
+    else if (RogueSubtletyPoints > RogueCombatPoints && RogueSubtletyPoints > RogueAssassinationPoints)
+    {
+        Specification = "Subtlety";
+    }
+
+    //PRIEST
+    if (PriestDisciplinePoints > PriestHolyPoints && PriestDisciplinePoints > PriestShadowPoints)
+    {
+        Specification = "Discipline";
+    }
+    else if (PriestHolyPoints > PriestDisciplinePoints && PriestHolyPoints > PriestShadowPoints)
+    {
+        Specification = "Holy";
+    }
+    else if (PriestShadowPoints > PriestDisciplinePoints && PriestShadowPoints > PriestHolyPoints)
+    {
+        Specification = "Shadow";
+    }
+
+    //PALADIN
+    if (PaladinHolyPoints > PaladinProtectionPoints && PaladinHolyPoints > PaladinRetributionPoints)
+    {
+        Specification = "Holy";
+    }
+    else if (PaladinProtectionPoints > PaladinHolyPoints && PaladinProtectionPoints > PaladinRetributionPoints)
+    {
+        Specification = "Protection";
+    }
+    else if (PaladinRetributionPoints > PaladinHolyPoints && PaladinRetributionPoints > PaladinProtectionPoints)
+    {
+        Specification = "Retribution";
+    }
+
+    //MAGE
+    if (MageArcanePoints > MageFirePoints && MageArcanePoints > MageFrostPoints)
+    {
+        Specification = "Arcane";
+    }
+    else if (MageFirePoints > MageArcanePoints && MageFirePoints > MageFrostPoints)
+    {
+        Specification = "Fire";
+    }
+    else if (MageFrostPoints > MageArcanePoints && MageFrostPoints > MageFirePoints)
+    {
+        Specification = "Frost";
+    }
+
+    //HUNTER
+    if (HunterBeastMasteryPoints > HunterMarksmanshipPoints && HunterBeastMasteryPoints > HunterSurvivalPoints)
+    {
+        Specification = "Beast Mastery";
+    }
+    else if (HunterMarksmanshipPoints > HunterBeastMasteryPoints && HunterMarksmanshipPoints > HunterSurvivalPoints)
+    {
+        Specification = "Marksmanship";
+    }
+    else if (HunterSurvivalPoints > HunterBeastMasteryPoints && HunterSurvivalPoints > HunterMarksmanshipPoints)
+    {
+        Specification = "Survival";
+    }
+
+    //DRUID
+    if (DruidBalancePoints > DruidFeralCombatPoints && DruidBalancePoints > DruidRestorationPoints)
+    {
+        Specification = "Balance";
+    }
+    else if (DruidFeralCombatPoints > DruidBalancePoints && DruidFeralCombatPoints > DruidRestorationPoints)
+    {
+        Specification = "Feral Combat";
+    }
+    else if (DruidRestorationPoints > DruidBalancePoints && DruidRestorationPoints > DruidFeralCombatPoints)
+    {
+        Specification = "Restoration";
+    }
+
+    return Specification;
 }
 
 void Player::LearnTalent(uint32 talentId, uint32 talentRank)

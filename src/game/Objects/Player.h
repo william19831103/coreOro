@@ -996,6 +996,7 @@ class Player final: public Unit
         void SetAcceptTicket(bool on) { if (on) m_ExtraFlags |= PLAYER_EXTRA_GM_ACCEPT_TICKETS; else m_ExtraFlags &= ~PLAYER_EXTRA_GM_ACCEPT_TICKETS; }
         bool IsGameMaster() const { return m_ExtraFlags & PLAYER_EXTRA_GM_ON; }
         void SetGameMaster(bool on, bool notify = false);
+        void SetSpectate(bool on);
         bool IsGMChat() const { return GetSession()->GetSecurity() >= SEC_MODERATOR && (m_ExtraFlags & PLAYER_EXTRA_GM_CHAT); }
         void SetGMChat(bool on, bool notify = false);
         bool IsTaxiCheater() const { return m_ExtraFlags & PLAYER_EXTRA_TAXICHEAT; }
@@ -1133,6 +1134,10 @@ class Player final: public Unit
         Item* StoreItem(ItemPosCountVec const& pos, Item* pItem, bool update);
         Item* EquipNewItem(uint16 pos, uint32 item, bool update);
         Item* EquipItem(uint16 pos, Item* pItem, bool update);
+        void Player::UnequipForbiddenArenaItems(BattleGroundTypeId bgTypeId);
+        bool Player::HasForbiddenArenaItems(BattleGroundTypeId bgTypeId);
+        bool Player::IsForbiddenArenaItem(ItemPrototype const* pItem, BattleGroundTypeId bgTypeId);
+        std::string Player::GetPatchName(uint8 patch);
         void AutoUnequipWeaponsIfNeed();
         void AutoUnequipOffhandIfNeed();
         void AutoUnequipItemFromSlot(uint32 slot);
@@ -1596,6 +1601,7 @@ class Player final: public Unit
         void SetFreeTalentPoints(uint32 points) { SetUInt32Value(PLAYER_CHARACTER_POINTS1, points); }
         bool ResetTalents(bool no_cost = false);
         void InitTalentForLevel();
+        std::string GetSpecNameByTalentPoints();
         void LearnTalent(uint32 talentId, uint32 talentRank);
 
         /*********************************************************/
@@ -2342,6 +2348,7 @@ class Player final: public Unit
         static Team TeamForRace(uint8 race);
         Team GetTeam() const final { return m_team; }
         TeamId GetTeamId() const { return m_team == ALLIANCE ? TEAM_ALLIANCE : TEAM_HORDE; }
+        TeamId GetBGTeamId() const { return GetBGTeam() == ALLIANCE ? TEAM_ALLIANCE : TEAM_HORDE; }
         static uint32 GetFactionForRace(uint8 race);
         void SetFactionForRace(uint8 race);
 
@@ -2423,6 +2430,8 @@ class Player final: public Unit
         BGData                    m_bgData;
     public:
         bool InBattleGround()       const                { return m_bgData.bgInstanceID != 0; }
+        bool InArena() const { return GetMapId() == 35 || GetMapId() == 556 || GetMapId() == 557 || GetMapId() == 558 || GetMapId() == 559 || GetMapId() == 560 || GetMapId() == 561 || GetMapId() == 562 || GetMapId() == 563 || GetMapId() == 570 || GetMapId() == 571 || GetMapId() == 572 || GetMapId() == 573 || GetMapId() == 617 || GetMapId() == 618 || GetMapId() == 619 || GetMapId() == 620; }
+        bool InDalaranArena() const { return GetMapId() == 617 || GetMapId() == 618 || GetMapId() == 619 || GetMapId() == 620; }
         uint32 GetBattleGroundId()  const                { return m_bgData.bgInstanceID; }
         BattleGroundTypeId GetBattleGroundTypeId() const { return m_bgData.bgTypeID; }
         BattleGround* GetBattleGround() const;

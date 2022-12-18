@@ -531,6 +531,18 @@ public:
 
 class PvPMaintenanceMaker;
 
+struct DisabledArenaSpellsTemplate
+{
+    uint32 entry = 0;
+    uint8 onevsone = 0;
+    uint8 twovstwo = 0;
+    uint8 threevsthree = 0;
+    uint8 fivevsfive = 0;
+    std::vector<DisabledArenaSpellsTemplate> spells;
+};
+
+typedef std::unordered_map<uint32, DisabledArenaSpellsTemplate> DisabledArenaSpellsMap;
+
 struct PlayerPremadeItem
 {
     PlayerPremadeItem(uint32 item, uint32 enchant, uint32 team) : itemId(item), enchantId(enchant), requiredTeam(team) {};
@@ -1368,6 +1380,9 @@ class ObjectMgr
         void ResetOldMailCounter() { m_OldMailCounter = 0; }
         void IncrementOldMailCounter(uint32 count) { m_OldMailCounter += count; }
 
+        void LoadDisabledArenaSpells();
+        DisabledArenaSpellsMap const& GetDisabledArenaSpellsTemplate() const { return m_disabledArenaSpellsMap; }
+
         void LoadPlayerPremadeTemplates();
         void ApplyPremadeGearTemplateToPlayer(uint32 entry, Player* pPlayer) const;
         void ApplyPremadeSpecTemplateToPlayer(uint32 entry, Player* pPlayer) const;
@@ -1538,6 +1553,8 @@ class ObjectMgr
 
         PlayerPremadeGearMap m_playerPremadeGearMap;
         PlayerPremadeSpecMap m_playerPremadeSpecMap;
+
+        DisabledArenaSpellsMap m_disabledArenaSpellsMap;
 };
 
 #define sObjectMgr MaNGOS::Singleton<ObjectMgr>::Instance()

@@ -11744,3 +11744,47 @@ void ObjectMgr::ApplyPremadeSpecTemplateToPlayer(uint32 entry, Player* pPlayer) 
         }
     }
 }
+
+void ObjectMgr::LoadDisabledArenaSpells()
+{
+    {
+        sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "Loading player disabled arena spells ...");
+        m_disabledArenaSpellsMap.clear();
+
+        //                                                               0        1
+        std::unique_ptr<QueryResult> result(WorldDatabase.Query("SELECT `entry`, `1v1`, `2v2`, `3v3`, `5v5` FROM `disabled_arena_spells`"));
+
+        if (!result)
+        {
+            BarGoLink bar(1);
+            bar.step();
+
+            sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded 0 disabled arena spells. DB table `disabled_arena_spells` is empty.");
+            return;
+        }
+
+        BarGoLink bar(result->GetRowCount());
+
+        do
+        {
+            bar.step();
+            auto fields = result->Fetch();
+
+            uint32 entry = fields[0].GetUInt32();
+            uint8 onevsone = fields[1].GetUInt8();
+            uint8 twovstwo = fields[2].GetUInt8();
+            uint8 threevsthree = fields[3].GetUInt8();
+            uint8 fivevsfive = fields[4].GetUInt8();
+
+            DisabledArenaSpellsTemplate& data = m_disabledArenaSpellsMap[entry];
+            data.entry = entry;
+            data.onevsone = onevsone;
+            data.twovstwo = twovstwo;
+            data.threevsthree = threevsthree;
+            data.fivevsfive = fivevsfive;
+
+        } while (result->NextRow());
+
+        sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded " SIZEFMTD " disabled arena spells", m_disabledArenaSpellsMap.size());
+    }
+}

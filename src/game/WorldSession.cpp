@@ -550,6 +550,14 @@ void WorldSession::LogoutPlayer(bool Save)
             sMapMgr.ExecuteSingleDelayedTeleport(_player); // Execute chain teleport if there are some
         }
 
+        // Remove all Arena queues.
+        for (uint8 bgTypeId = BATTLEGROUND_NA1v1; bgTypeId <= BATTLEGROUND_DS5v5; ++bgTypeId)
+        {
+            BattleGroundQueue& queue = sBattleGroundMgr.m_battleGroundQueues[bgTypeId];
+            if (&queue)
+                queue.LeaveQueue(_player, BattleGroundTypeId(bgTypeId));
+        }
+
         // Refresh apres ca
         inWorld = _player->IsInWorld() && _player->FindMap();
         if (!inWorld)

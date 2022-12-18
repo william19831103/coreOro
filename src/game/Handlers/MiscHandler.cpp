@@ -637,6 +637,10 @@ void WorldSession::HandleBugOpcode(WorldPacket& recv_data)
 
 void WorldSession::HandleReclaimCorpseOpcode(WorldPacket& recv_data)
 {
+    // Don't let reclaim corpse in arenas.
+    if (GetPlayer()->InArena())
+        return;
+
     ObjectGuid guid;
     recv_data >> guid;
 
