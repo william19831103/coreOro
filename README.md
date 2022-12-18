@@ -16,9 +16,6 @@ I know it's horrible coded... i don't care. It works and was funny.
 - Disabled most Consumables and Buffs, adjustable in the "arena_disabled_spells" table.
 - Damage & healing done on Scoreboard added, this feature is new and not available in Classic for BGs. Also it does count Pet damage too and not count over damage (So if you kill a Player with 4k hp with a 6k Shadowbolt it adds only 4k damage)
 
-![grafik](https://user-images.githubusercontent.com/357606/208283952-1c3f0b6a-dbf0-4edf-bc26-a9d5f668df9b.png)
-![grafik](https://user-images.githubusercontent.com/357606/208283962-9cc21b72-8cdb-408f-b225-c001edbc0119.png)
-
 ### What Todo
 
 - Compile
