@@ -18,11 +18,9 @@ I know it's horrible coded... i don't care. It works and was funny.
 
 ### What Todo
 
-- Compile
-- Copy the Maps etc from source\sql\arena
+- Add the Maps etc from source\arena_data into you existing data folder (only the arena maps are contained)
 - Add source\sql\arena\world_arena.sql on your world DB
 - Download Patch-3.MPQ and put it into your World of Warcraft\Data Folder: https://github.com/Oroxzy/VMaNGOSArenaPatch
-- Login
 - Use `.lookup object arena orb` or `.gobj add 187078` to place the Arena Orb and queue up
 
 - ![grafik](https://user-images.githubusercontent.com/357606/208283756-fcb72a8e-41e5-4f85-b2b4-9f3f527ab85c.png)
