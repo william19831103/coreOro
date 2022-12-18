@@ -152,7 +152,7 @@ GroupQueueInfo* BattleGroundQueue::AddGroup(Player* leader, Group* grp, BattleGr
     ginfo->isInvitedToBgInstanceGuid = 0;
     ginfo->joinTime                  = WorldTimer::getMSTime();
     ginfo->removeInviteTime          = 0;
-    ginfo->groupTeam                 = leader->GetBGTeam(); // UterueOne: Arena.
+    ginfo->groupTeam                 = leader->GetBGTeam(); // Arena.
     ginfo->bracketId                 = bracketId;
     ginfo->desiredInstanceId         = instanceId;
     ginfo->players.clear();
@@ -1364,7 +1364,7 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket* data, BattleGround *bg)
                 *data << (uint32)((BattleGroundABScore*)score)->basesAssaulted;			// bases asssulted
                 *data << (uint32)((BattleGroundABScore*)score)->basesDefended;			// bases defended
                 break;
-            //UterusOne Arena
+            // Arena
             case BATTLEGROUND_RL1v1:
             case BATTLEGROUND_RL2v2:
             case BATTLEGROUND_RL3v3:

@@ -10856,7 +10856,7 @@ std::string Player::GetPatchName(uint8 patch)
     return "Invalid Patch!";
 }
 
-// UterusOne: Arena: Check items that are not allowed.
+// Arena: Check items that are not allowed.
 void Player::UnequipForbiddenArenaItems(BattleGroundTypeId bgTypeId)
 {
     if (!bgTypeId)

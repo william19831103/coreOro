@@ -334,7 +334,7 @@ void BattleGround::Update(uint32 diff)
     /***           BATTLEGROUND STARTING SYSTEM            ***/
     /*********************************************************/
 
-    // UterusOne 10sec Battle starting timer   
+    // 10sec Battle starting timer   
     // BG_STARTING_EVENT_THIRD = 30 seconds (BG_STARTING_EVENT_THIRD - 19 seconds = start timer at 11 seconds left
     if (IsArena())
     {
@@ -364,13 +364,12 @@ void BattleGround::Update(uint32 diff)
         else if (m_tenSecondsCountDown)
             m_tenSecondsCountDown = false;
     }
-    //UterusOne 10sec Battle starting timer end
 
     if (GetStatus() == STATUS_WAIT_JOIN && GetPlayersSize())
     {
         ModifyStartDelayTime(diff);
 
-        // UterusOne: Arena: Arena Watcher NPC.
+        // Arena: Arena Watcher NPC.
         if (AllPlayersReady() && !m_playersReady)
         {
             m_playersReady = true;

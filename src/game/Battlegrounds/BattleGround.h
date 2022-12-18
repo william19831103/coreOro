@@ -170,7 +170,7 @@ enum ScoreType
     SCORE_DEATHS                = 2,
     SCORE_HONORABLE_KILLS       = 3,
     SCORE_BONUS_HONOR           = 4,
-    //UterusOne Arena
+    // Arena
     SCORE_DAMAGE_DONE           = 5,
     SCORE_HEALING_DONE          = 6,
     //WS
