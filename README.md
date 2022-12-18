@@ -1,6 +1,6 @@
 
 
-# VMaNGOS Arena
+# VMaNGOS Arena (ONLY FOR THE OLD 1.12 CLIENT!)
 One of my first Projects for VMaNGOS with almost no coding knowledge just copy-paste, endless tries and a lot of beer.
 I know it's horrible coded... i don't care. It works and was funny.
 
