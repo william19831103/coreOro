@@ -1,7 +1,7 @@
 
 
 # VMaNGOS Arena
-One of my first Projects for VMaNGOS with almost no coding knowledge just copy-paste and endless tries and a lot of beer.
+One of my first Projects for VMaNGOS with almost no coding knowledge just copy-paste, endless tries and a lot of beer.
 I know it's horrible coded... i don't care. It works and was funny.
 
 ### Features:
