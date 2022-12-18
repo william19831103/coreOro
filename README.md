@@ -10,5 +10,5 @@ I know it's horrible coded but it works and was funny.
 - Add source\sql\arena\world_arena.sql on your world DB
 - Download Patch-3.MPQ and put it into your World of Warcraft\Data Folder: https://github.com/Oroxzy/VMaNGOSArenaPatch
 - Login
-- Use ".lookup obejct arena orb" to place the Arena Orb to queue up
+- Use `.lookup object arena orb` to place the Arena Orb to queue up
 - Have fun
