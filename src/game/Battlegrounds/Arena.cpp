@@ -161,26 +161,6 @@ void Arena::ApplyMortalStack()
     }
 }
 
-void Arena::Spawn_Stash()
-{
-    BGObjects::const_iterator itr = m_eventObjects[MAKE_PAIR32(STASH, 0)].gameobjects.begin();
-    for (; itr != m_eventObjects[MAKE_PAIR32(STASH, 0)].gameobjects.end(); ++itr)
-        SpawnBGObject(*itr, RESPAWN_IMMEDIATELY);
-}
-
-void Arena::Despawn_Stash()
-{
-    BGObjects::const_iterator itr = m_eventObjects[MAKE_PAIR32(STASH, 0)].gameobjects.begin();
-    for (; itr != m_eventObjects[MAKE_PAIR32(STASH, 0)].gameobjects.end(); ++itr)
-    {
-        Map* map = GetBgMap();
-        GameObject* obj = map->GetGameObject(*itr);
-        if (!obj)
-            return;
-        map->Remove(obj, true);
-    }
-}
-
 void Arena::Spawn_Doodad_DalaranSewer01()
 {
     BGObjects::const_iterator itr = m_eventObjects[MAKE_PAIR32(DOODAD_DALARANSEWER01, 0)].gameobjects.begin();
@@ -388,7 +368,6 @@ void Arena::StartingEventOpenDoors()
 {
     OpenDoorEvent(BG_EVENT_DOOR);
     PlaySoundToAll(LET_THE_GAMES_BEGIN);
-    Despawn_Stash(); // Remove the Stash if game begins.
     SetSpawnEventMode(NPC_ANNOUNCER_1, 0, DESPAWN_FORCED);
     SetSpawnEventMode(NPC_ANNOUNCER_2, 0, DESPAWN_FORCED);
 

@@ -29,7 +29,7 @@
 enum Arena_Timers
 {
     ARENA_TIME_25_MIN = 25 * IN_MILLISECONDS * MINUTE,
-    ARENA_TIME_2_MIN = 1 * IN_MILLISECONDS * MINUTE // est
+    ARENA_TIME_2_MIN = 1 * IN_MILLISECONDS * MINUTE
 };
 
 enum Arena_Sound
@@ -113,9 +113,8 @@ enum Arena_DSGameEvents
     DOODAD_DALARANSEWER_ARENAWATERFALL              = 210,
     DOODAD_DALARANSEWER_ARENAWATERFALL_COLLISION01  = 211,
     SHADOW_SIGHT                                    = 212,
-    STASH                                           = 213,  // The stash chest to switch gear and specc in arena. can be disabled in config.
     NPC_ANNOUNCER_1                                 = 214,  // The readycheck guy.
-    NPC_ANNOUNCER_2                                 = 215  // The readycheck guy.
+    NPC_ANNOUNCER_2                                 = 215   // The readycheck guy.
 };
 
 class ArenaScore : public BattleGroundScore
@@ -142,8 +141,6 @@ class Arena : public BattleGround
         void ApplyMortalStack();
         void TurnOff(uint8 event1);
         void Spawn_Doodad_DalaranSewer01();
-        void Spawn_Stash();
-        void Despawn_Stash();
         void Spawn_Shadow_Sight();
         void Spawn_Doodad_DalaranSewer_ArenaWaterFall();
         void Spawn_Doodad_DalaranSewer_ArenaWaterFall_Collision01();
