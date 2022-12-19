@@ -13,7 +13,9 @@ I know it's horrible coded... i don't care. It works and was funny.
 - Max patch for allowed gear can be set in cfg.
 - Max item level allowed can be set in cfg.
 - Horde and Alliance can chat with each other if they're in the same arena team.
-- Disabled most Consumables and Buffs, adjustable in the "arena_disabled_spells" table.
+- Spell Restriciton: You are able to disable every spell you like, adjustable in the "arena_disabled_spells" table.
+- ![grafik](https://user-images.githubusercontent.com/357606/208445837-caa9f3fe-e2ca-484b-b9a0-edf676f698c2.png)
+
 - Damage & healing done on Scoreboard added, this feature is new and not available in Classic for BGs. Also it does count Pet damage too and not count over damage (So if you kill a Player with 4k hp with a 6k Shadowbolt it adds only 4k damage)
 
 ### What Todo
