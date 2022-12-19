@@ -2885,7 +2885,6 @@ DynamicRespawn.AffectLevelBelow         = 0
 DynamicRespawn.PlayersThreshold         = 0
 DynamicRespawn.PlayersMaxLevelDiff      = 0
 
-
 ###################################################################################################
 # ARENA SETTINGS
 #
