@@ -22,9 +22,9 @@ ConfVersion=2010100901
 #        Default: "" - no log directory prefix. if used log names aren't absolute paths
 #                      then logs will be stored in the current directory of the running program.
 #
-#	   HonorDir
-#		     Folder to store HCR files. These are logs of weekly honor calculation.
-#		     By default logs are stored in the current directory of the running program.	                    
+#      HonorDir
+#            Folder to store HCR files. These are logs of weekly honor calculation.
+#            By default logs are stored in the current directory of the running program.
 #
 #    LoginDatabase.Info
 #    WorldDatabase.Info
@@ -41,12 +41,12 @@ ConfVersion=2010100901
 #                    hostname;port;username;password;database
 #                    .;/path/to/unix_socket/DIRECTORY or . for default path;username;password;database - use Unix sockets at Unix/Linux
 #
-#	   LoginDatabase.Connections
-#	   WorldDatabase.Connections
-#	   CharacterDatabase.Connections
+#      LoginDatabase.Connections
+#      WorldDatabase.Connections
+#      CharacterDatabase.Connections
 #    LogsDatabase.Connections
-#		     Amount of connections to database which will be used for SELECT queries. Maximum 16 connections per database.
-#		     Default: 1 connection for SELECT statements
+#            Amount of connections to database which will be used for SELECT queries. Maximum 16 connections per database.
+#            Default: 1 connection for SELECT statements
 #
 #    LoginDatabase.WorkerThreads
 #    WorldDatabase.WorkerThreads
@@ -377,7 +377,7 @@ Anticrash.Rearm.Timer = 60000
 #    PvP.DishonorableKills
 #        Whether to give dishonorable kills to players who kill civilians.
 #        Default: 1
-#  
+#
 #    PvP.CityProtector
 #        Whether to assign City Protector titles on honor update or not.
 #        Default: 0
@@ -915,7 +915,7 @@ PerformanceLog.SlowPacketBroadcast      = 0
 #                 1 (allowed)
 #
 #    Group.OfflineLeaderDelay
-#        A grace period for an offline group leader to reconnect before tranfering leadership to the next suitable member of the group (in secs) 
+#        A grace period for an offline group leader to reconnect before tranfering leadership to the next suitable member of the group (in secs)
 #        Default: 300 (5 minutes)
 #                   0 (Do not transfer group leadership)
 #
@@ -1356,7 +1356,7 @@ GuidReserveSize.GameObject = 1000
 #        Minimum level to /yell in chat
 #        Default: 0
 #
-#    YellRange.LinearScale.MaxLevel 
+#    YellRange.LinearScale.MaxLevel
 #    YellRange.QuadraticScale.MaxLevel
 #        Limit yell range based on level
 #        Default: 0
@@ -2885,3 +2885,39 @@ DynamicRespawn.AffectLevelBelow         = 0
 DynamicRespawn.PlayersThreshold         = 0
 DynamicRespawn.PlayersMaxLevelDiff      = 0
 
+
+###################################################################################################
+# ARENA SETTINGS
+#
+#   Arena.MaxItemLevel
+#       Description: The max itemlevel of an item allowed in arenas.
+#
+#   Arena.MaxItemPatch
+#       Description: The current patch for an item that is allowed to equip in arenas.
+#       1.2   = 0
+#       1.3   = 1
+#       1.4   = 2
+#       1.5   = 3
+#       1.6   = 4
+#       1.7   = 5
+#       1.8   = 6
+#       1.9   = 7
+#       1.10  = 8
+#       1.11  = 9
+#       1.12  = 10
+#
+#   Arena.AllowItemSwap
+#       Description: Allows swapping items if arena is in progress (Mainhand, Offhand and Ranged slot can always been swapped).
+#       Default:    0 - (Disabled)
+#                   1 - (Enabled)
+#
+#   Arena.AllowTrinketSwap
+#       Description: Allows swapping trinkets if arena is in progress.
+#                   0 - (Disabled)
+#       Default:    1 - (Enabled)
+#
+###################################################################################################
+Arena.MaxItemLevel          = 92
+Arena.MaxItemPatch          = 10
+Arena.AllowItemSwap         = 0
+Arena.AllowTrinketSwap      = 1
