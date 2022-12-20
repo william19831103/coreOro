@@ -180,7 +180,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
         else
         {
             // Send message in universal language if crossfaction chat is enabled and player is using default faction languages.
-            if (sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT) && (lang == LANG_COMMON || lang == LANG_ORCISH))
+            if (sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT) && (lang == LANG_COMMON || lang == LANG_ORCISH) || (_player && _player->InArena()))
                 lang = LANG_UNIVERSAL;
             else
             {
@@ -193,7 +193,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                     case CHAT_MSG_RAID_WARNING:
 #endif
                         // allow two side chat at group channel if two side group allowed
-                        if (sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_GROUP))
+                        if (sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_GROUP) || (_player && _player->InArena()))
                             lang = LANG_UNIVERSAL;
                         break;
                     case CHAT_MSG_GUILD:
@@ -381,6 +381,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             if (!GetPlayer()->IsAlive())
                 return;
 
+            if (GetPlayer()->GetVisibility() == VISIBILITY_OFF && GetPlayer()->InArena())
+                return;
+
             GetPlayer()->Say(msg, lang);
 
             if (lang != LANG_ADDON)
@@ -401,6 +404,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             }
 
             if (!GetPlayer()->IsAlive())
+                return;
+
+            if (GetPlayer()->GetVisibility() == VISIBILITY_OFF && GetPlayer()->InArena())
                 return;
 
             GetPlayer()->TextEmote(msg);
@@ -424,6 +430,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             }
 
             if (!GetPlayer()->IsAlive())
+                return;
+
+            if (GetPlayer()->GetVisibility() == VISIBILITY_OFF && GetPlayer()->InArena())
                 return;
 
             GetPlayer()->Yell(msg, lang);
@@ -514,7 +523,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             {
                 group = _player->GetGroup();
 #if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_6_1
-                if (!group || group->isBGGroup())
+                if (!group || group->isBGGroup() && !_player->InArena())
 #else
                 if (!group)
 #endif
