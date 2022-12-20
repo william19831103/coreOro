@@ -3027,14 +3027,22 @@ void Player::SetSpectate(bool on)
 {
     if (on)
     {
+        m_ExtraFlags |= PLAYER_EXTRA_ARENA_SPECTATOR_ON;
+        SetFactionTemplateId(35);
+        SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_ARENA_SPECTATOR);
+        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
+        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER);
+        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED);
+        SetVisibility(VISIBILITY_RESPAWN);
+
         ResurrectPlayer(false);
         RemoveAllAuras();
         SpawnCorpseBones();
-        // Set invisible.
-        SetVisibility(VISIBILITY_GROUP_STEALTH);
 
         // Remove Player Model.
         SetDisplayId(11686);
+
         // Remove Weapon Models.
         SetVisibleItemSlot(EQUIPMENT_SLOT_MAINHAND, nullptr);
         SetVisibleItemSlot(EQUIPMENT_SLOT_OFFHAND, nullptr);
@@ -3042,10 +3050,6 @@ void Player::SetSpectate(bool on)
 
         // Higher run speed.
         SetSpeedRate(MOVE_RUN, 2.0);
-        //spectatorFlag = true;
-
-        // m_ExtraFlags |= PLAYER_EXTRA_GM_ON;
-        //SetFactionTemplateId(35);
 
         if (Pet* pet = GetPet())
         {
@@ -3053,12 +3057,7 @@ void Player::SetSpectate(bool on)
         }
         UnsummonPetTemporaryIfAny();
         CallForAllControlledUnits(SetGameMasterOnHelper(), CONTROLLED_PET | CONTROLLED_TOTEMS | CONTROLLED_GUARDIANS | CONTROLLED_CHARM);
-
         RemoveByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP);
-        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
-        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER);
-        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED);
         SetFFAPvP(false);
         UpdatePvPContested(false, true);
 
@@ -3067,6 +3066,13 @@ void Player::SetSpectate(bool on)
     }
     else
     {
+        m_ExtraFlags &= ~PLAYER_EXTRA_ARENA_SPECTATOR_ON;
+        SetFactionForRace(GetRace());
+        RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_ARENA_SPECTATOR);
+        RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+        RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
+        RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER);
+        RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED);
         SetVisibility(VISIBILITY_ON);
 
         InitPlayerDisplayIds();
@@ -3080,17 +3086,6 @@ void Player::SetSpectate(bool on)
         if (Item* nSlot = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_RANGED))
             SetVisibleItemSlot(EQUIPMENT_SLOT_RANGED, nSlot);
 
-        // m_ExtraFlags &= ~PLAYER_EXTRA_GM_ON;
-        SetFactionForRace(GetRace());
-        // RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_GM);
-        RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-        RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
-        RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER);
-        RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED);
-
-        //if (spectateFrom)
-        //	SetViewpoint(spectateFrom, false);
-
         // restore FFA PvP Server state
         if (sWorld.IsFFAPvPRealm())
             SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP);
@@ -3099,13 +3094,20 @@ void Player::SetSpectate(bool on)
         UpdateArea(m_areaUpdateId);
 
         GetHostileRefManager().setOnlineOfflineState(true);
-        //spectateCanceled = false;
-        //spectatorFlag = false;
         UpdateSpeed(MOVE_RUN, true);
     }
-    //m_camera.UpdateVisibilityForOwner();
+
+    m_camera.UpdateVisibilityForOwner();
     UpdateObjectVisibility();
-    //UpdateForQuestWorldObjects();
+    UpdateForQuestWorldObjects();
+
+    UpdateMask m;
+    m.SetCount(UNIT_END);
+    m.SetBit(UNIT_FIELD_FLAGS);
+    RefreshBitsForVisibleUnits(&m, TYPEMASK_UNIT);
+    m.SetCount(PLAYER_END);
+    m.SetBit(UNIT_FIELD_FLAGS);
+    RefreshBitsForVisibleUnits(&m, TYPEMASK_PLAYER);
 }
 
 void Player::SetGameMaster(bool on, bool notify)
@@ -10124,20 +10126,14 @@ InventoryResult Player::CanEquipItem(uint8 slot, uint16& dest, Item* pItem, bool
 
             uint32 type = pProto->InventoryType;
 
-            // Arena: item switch restriction start.
+            // Arena: Item switch restriction.
             if (InArena())
             {
-                if (GetVisibility() == VISIBILITY_OFF)
+                if (IsArenaSpectator())
                     return EQUIP_ERR_CANT_DO_RIGHT_NOW;
 
                 bool allowSwap = sWorld.getConfig(CONFIG_BOOL_ARENA_ALLOW_ITEM_SWAP);
                 bool allowTrinketSwap = sWorld.getConfig(CONFIG_BOOL_ARENA_ALLOW_TRINKET_SWAP);
-
-                /*
-                std::unique_ptr<QueryResult> getitem(WorldDatabase.PQuery("SELECT item FROM auctionhousebot WHERE item = '%u';", pItem->GetEntry()));
-                if (!getitem)
-                    return EQUIP_ERR_CANT_DO_RIGHT_NOW;
-                */
 
                 // Allow equip Items if slot is empty or swapping is enabled in arenas.
                 uint32 type = pProto->InventoryType;
@@ -10145,7 +10141,7 @@ InventoryResult Player::CanEquipItem(uint8 slot, uint16& dest, Item* pItem, bool
                 {
                     // Only allow Mainhand, Offhand, Ranged and Trinket Slot.
                     if (!allowSwap && GetItemByPos(INVENTORY_SLOT_BAG_0, FindEquipSlot(pProto, eslot, swap)))
-                        if (type != INVTYPE_TRINKET && type != INVTYPE_WEAPON && type != INVTYPE_WEAPONMAINHAND && type != INVTYPE_WEAPONOFFHAND && type != INVTYPE_2HWEAPON && type != INVTYPE_SHIELD && type != INVTYPE_HOLDABLE && type != INVTYPE_RANGEDRIGHT && type != INVTYPE_RANGED)
+                        if (type != INVTYPE_NON_EQUIP && type != INVTYPE_TRINKET && type != INVTYPE_WEAPON && type != INVTYPE_WEAPONMAINHAND && type != INVTYPE_WEAPONOFFHAND && type != INVTYPE_2HWEAPON && type != INVTYPE_SHIELD && type != INVTYPE_HOLDABLE && type != INVTYPE_RANGEDRIGHT && type != INVTYPE_RANGED)
                             return EQUIP_ERR_CANT_DO_RIGHT_NOW;
 
                     // Trinkets.
@@ -10235,17 +10231,23 @@ InventoryResult Player::CanUnequipItem(uint16 pos, bool swap) const
     // Arena
     if (InArena())
     {
-        if (GetVisibility() == VISIBILITY_OFF)
+        if (IsArenaSpectator())
             return EQUIP_ERR_CANT_DO_RIGHT_NOW;
 
         bool allowSwap = sWorld.getConfig(CONFIG_BOOL_ARENA_ALLOW_ITEM_SWAP);
+        bool allowTrinketSwap = sWorld.getConfig(CONFIG_BOOL_ARENA_ALLOW_TRINKET_SWAP);
 
         uint32 type = pProto->InventoryType;
         BattleGround* bg = ((Player*)this)->GetBattleGround();
         if (bg && bg->GetStatus() == STATUS_IN_PROGRESS && !allowSwap)
         {
-            if (type != INVTYPE_WEAPON && type != INVTYPE_WEAPONMAINHAND && type != INVTYPE_WEAPONOFFHAND && type != INVTYPE_2HWEAPON && type != INVTYPE_SHIELD && type != INVTYPE_HOLDABLE && type != INVTYPE_RANGEDRIGHT && type != INVTYPE_RANGED)
+            if (type != INVTYPE_NON_EQUIP && type != INVTYPE_TRINKET && type != INVTYPE_WEAPON && type != INVTYPE_WEAPONMAINHAND && type != INVTYPE_WEAPONOFFHAND && type != INVTYPE_2HWEAPON && type != INVTYPE_SHIELD && type != INVTYPE_HOLDABLE && type != INVTYPE_RANGEDRIGHT && type != INVTYPE_RANGED)
                 return EQUIP_ERR_CANT_DO_RIGHT_NOW;
+
+            // Trinkets.
+            if (!allowTrinketSwap)
+                if (type == INVTYPE_TRINKET)
+                    return EQUIP_ERR_CANT_DO_RIGHT_NOW;
         }
     }
 

@@ -381,7 +381,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             if (!GetPlayer()->IsAlive())
                 return;
 
-            if (GetPlayer()->GetVisibility() == VISIBILITY_OFF && GetPlayer()->InArena())
+            if (GetPlayer()->IsArenaSpectator() && GetPlayer()->InArena()) // Spectators can't speak
                 return;
 
             GetPlayer()->Say(msg, lang);
@@ -406,7 +406,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             if (!GetPlayer()->IsAlive())
                 return;
 
-            if (GetPlayer()->GetVisibility() == VISIBILITY_OFF && GetPlayer()->InArena())
+            if (GetPlayer()->IsArenaSpectator() && GetPlayer()->InArena()) // Spectators can't emote
                 return;
 
             GetPlayer()->TextEmote(msg);
@@ -432,7 +432,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             if (!GetPlayer()->IsAlive())
                 return;
 
-            if (GetPlayer()->GetVisibility() == VISIBILITY_OFF && GetPlayer()->InArena())
+            if (GetPlayer()->IsArenaSpectator() && GetPlayer()->InArena()) // Spectators can't yell
                 return;
 
             GetPlayer()->Yell(msg, lang);

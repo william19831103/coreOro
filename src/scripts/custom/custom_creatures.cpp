@@ -2432,7 +2432,7 @@ bool GossipHello_npc_arena_watcher(Player* pPlayer, Creature* pCreature)
     if (!pCreature->InArena())
         return false;
 
-    if (pPlayer->GetVisibility() != VISIBILITY_GROUP_STEALTH && !pPlayer->HasAura(SPELL_ALLIANCE_FLAG) && !pPlayer->HasAura(SPELL_HORDE_FLAG))
+    if (!pPlayer->IsArenaSpectator() && !pPlayer->HasAura(SPELL_ALLIANCE_FLAG) && !pPlayer->HasAura(SPELL_HORDE_FLAG))
         pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "I'm ready!\n\n", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_READY);
 
 

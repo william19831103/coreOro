@@ -76,7 +76,7 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recv_data)
         return;
     }
 
-    if (GetPlayer()->GetVisibility() == VISIBILITY_OFF && GetPlayer()->InArena())
+    if (GetPlayer()->IsArenaSpectator() && GetPlayer()->InArena())
         return;
 
     // Can't group with
