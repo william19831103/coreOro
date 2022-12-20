@@ -3031,7 +3031,7 @@ void Player::SetSpectate(bool on)
         RemoveAllAuras();
         SpawnCorpseBones();
         // Set invisible.
-        SetVisibility(VISIBILITY_OFF);
+        SetVisibility(VISIBILITY_GROUP_STEALTH);
 
         // Remove Player Model.
         SetDisplayId(11686);
@@ -3044,8 +3044,8 @@ void Player::SetSpectate(bool on)
         SetSpeedRate(MOVE_RUN, 2.0);
         //spectatorFlag = true;
 
-        m_ExtraFlags |= PLAYER_EXTRA_GM_ON;
-        SetFactionTemplateId(35);
+        // m_ExtraFlags |= PLAYER_EXTRA_GM_ON;
+        //SetFactionTemplateId(35);
 
         if (Pet* pet = GetPet())
         {
@@ -3056,6 +3056,9 @@ void Player::SetSpectate(bool on)
 
         RemoveByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP);
         SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
+        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER);
+        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED);
         SetFFAPvP(false);
         UpdatePvPContested(false, true);
 
@@ -3077,10 +3080,13 @@ void Player::SetSpectate(bool on)
         if (Item* nSlot = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_RANGED))
             SetVisibleItemSlot(EQUIPMENT_SLOT_RANGED, nSlot);
 
-        m_ExtraFlags &= ~PLAYER_EXTRA_GM_ON;
+        // m_ExtraFlags &= ~PLAYER_EXTRA_GM_ON;
         SetFactionForRace(GetRace());
-        RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_GM);
+        // RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_GM);
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+        RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
+        RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER);
+        RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED);
 
         //if (spectateFrom)
         //	SetViewpoint(spectateFrom, false);

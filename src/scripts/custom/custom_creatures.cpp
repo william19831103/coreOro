@@ -633,45 +633,45 @@ bool GossipSelect_EnchantNPC(Player* player, Creature* creature, uint32 sender, 
     {
         switch (action)
         {
-        case EQUIPMENT_SLOT_CHEST:
-            player->ADD_GOSSIP_ITEM(5, "Greater Stats",      GOSSIP_SENDER_MAIN, CHEST_STATS);
+            case EQUIPMENT_SLOT_CHEST:
+                player->ADD_GOSSIP_ITEM(5, "Greater Stats",      GOSSIP_SENDER_MAIN, CHEST_STATS);
+                break;
+            case EQUIPMENT_SLOT_BACK:
+                player->ADD_GOSSIP_ITEM(5, "Agility",            GOSSIP_SENDER_MAIN, CLOAK_AGILITY);
+                player->ADD_GOSSIP_ITEM(5, "Armor",              GOSSIP_SENDER_MAIN, CLOAK_ARMOR);
+                player->ADD_GOSSIP_ITEM(5, "Dodge",              GOSSIP_SENDER_MAIN, CLOAK_DODGE);
+                player->ADD_GOSSIP_ITEM(5, "Subtlety",           GOSSIP_SENDER_MAIN, CLOAK_SUB);
             break;
-        case EQUIPMENT_SLOT_BACK:
-            player->ADD_GOSSIP_ITEM(5, "Agility",            GOSSIP_SENDER_MAIN, CLOAK_AGILITY);
-            player->ADD_GOSSIP_ITEM(5, "Armor",              GOSSIP_SENDER_MAIN, CLOAK_ARMOR);
-            player->ADD_GOSSIP_ITEM(5, "Dodge",              GOSSIP_SENDER_MAIN, CLOAK_DODGE);
-            player->ADD_GOSSIP_ITEM(5, "Subtlety",           GOSSIP_SENDER_MAIN, CLOAK_SUB);
-        break;
-        case EQUIPMENT_SLOT_WRISTS:
-            player->ADD_GOSSIP_ITEM(5, "Stamina",            GOSSIP_SENDER_MAIN, BRACER_STAM);
-            player->ADD_GOSSIP_ITEM(5, "Strength",           GOSSIP_SENDER_MAIN, BRACER_STR);
-            player->ADD_GOSSIP_ITEM(5, "Healing",            GOSSIP_SENDER_MAIN, BRACER_HEAL);
-            player->ADD_GOSSIP_ITEM(5, "Intellect",          GOSSIP_SENDER_MAIN, BRACER_INT);
-            break;
-        case EQUIPMENT_SLOT_HANDS:
-            player->ADD_GOSSIP_ITEM(5, "Agility",            GOSSIP_SENDER_MAIN, GLOVES_AGI);
-            player->ADD_GOSSIP_ITEM(5, "Fire Power",         GOSSIP_SENDER_MAIN, GLOVES_FIRE);
-            player->ADD_GOSSIP_ITEM(5, "Frost Power",        GOSSIP_SENDER_MAIN, GLOVES_FROST);
-            player->ADD_GOSSIP_ITEM(5, "Shadow Power",       GOSSIP_SENDER_MAIN, GLOVES_SHADOW);
-            player->ADD_GOSSIP_ITEM(5, "Healing",            GOSSIP_SENDER_MAIN, GLOVES_HEALING);
-            break;
-        case EQUIPMENT_SLOT_FEET:
-            player->ADD_GOSSIP_ITEM(5, "Stamina",            GOSSIP_SENDER_MAIN, BOOTS_STAM);
-            player->ADD_GOSSIP_ITEM(5, "Minor Speed",        GOSSIP_SENDER_MAIN, BOOTS_SPEED);
-            player->ADD_GOSSIP_ITEM(5, "Agility",            GOSSIP_SENDER_MAIN, BOOTS_AGI);
-            break;
-        case EQUIPMENT_SLOT_MAINHAND:
-            player->ADD_GOSSIP_ITEM(5, "Crusader",           GOSSIP_SENDER_MAIN, WEP_CRUSADER);
-            player->ADD_GOSSIP_ITEM(5, "1H Agility",         GOSSIP_SENDER_MAIN, WEP1H_AGILITY);
-            player->ADD_GOSSIP_ITEM(5, "2H Agility",         GOSSIP_SENDER_MAIN, WEP2H_AGILITY);
-            player->ADD_GOSSIP_ITEM(5, "Spellpower",         GOSSIP_SENDER_MAIN, WEP_SPELLPOWER);
-            player->ADD_GOSSIP_ITEM(5, "Healing",            GOSSIP_SENDER_MAIN, WEP_HEAL);
-            break;
-        case EQUIPMENT_SLOT_OFFHAND:
-            player->ADD_GOSSIP_ITEM(5, "Spirit",             GOSSIP_SENDER_MAIN, OFFHAND_SPIRIT);
-            player->ADD_GOSSIP_ITEM(5, "Stamina",            GOSSIP_SENDER_MAIN, OFFHAND_STAM);
-            player->ADD_GOSSIP_ITEM(5, "Frost Resistance",   GOSSIP_SENDER_MAIN, OFFHAND_FROSTRES);
-            break;
+            case EQUIPMENT_SLOT_WRISTS:
+                player->ADD_GOSSIP_ITEM(5, "Stamina",            GOSSIP_SENDER_MAIN, BRACER_STAM);
+                player->ADD_GOSSIP_ITEM(5, "Strength",           GOSSIP_SENDER_MAIN, BRACER_STR);
+                player->ADD_GOSSIP_ITEM(5, "Healing",            GOSSIP_SENDER_MAIN, BRACER_HEAL);
+                player->ADD_GOSSIP_ITEM(5, "Intellect",          GOSSIP_SENDER_MAIN, BRACER_INT);
+                break;
+            case EQUIPMENT_SLOT_HANDS:
+                player->ADD_GOSSIP_ITEM(5, "Agility",            GOSSIP_SENDER_MAIN, GLOVES_AGI);
+                player->ADD_GOSSIP_ITEM(5, "Fire Power",         GOSSIP_SENDER_MAIN, GLOVES_FIRE);
+                player->ADD_GOSSIP_ITEM(5, "Frost Power",        GOSSIP_SENDER_MAIN, GLOVES_FROST);
+                player->ADD_GOSSIP_ITEM(5, "Shadow Power",       GOSSIP_SENDER_MAIN, GLOVES_SHADOW);
+                player->ADD_GOSSIP_ITEM(5, "Healing",            GOSSIP_SENDER_MAIN, GLOVES_HEALING);
+                break;
+            case EQUIPMENT_SLOT_FEET:
+                player->ADD_GOSSIP_ITEM(5, "Stamina",            GOSSIP_SENDER_MAIN, BOOTS_STAM);
+                player->ADD_GOSSIP_ITEM(5, "Minor Speed",        GOSSIP_SENDER_MAIN, BOOTS_SPEED);
+                player->ADD_GOSSIP_ITEM(5, "Agility",            GOSSIP_SENDER_MAIN, BOOTS_AGI);
+                break;
+            case EQUIPMENT_SLOT_MAINHAND:
+                player->ADD_GOSSIP_ITEM(5, "Crusader",           GOSSIP_SENDER_MAIN, WEP_CRUSADER);
+                player->ADD_GOSSIP_ITEM(5, "1H Agility",         GOSSIP_SENDER_MAIN, WEP1H_AGILITY);
+                player->ADD_GOSSIP_ITEM(5, "2H Agility",         GOSSIP_SENDER_MAIN, WEP2H_AGILITY);
+                player->ADD_GOSSIP_ITEM(5, "Spellpower",         GOSSIP_SENDER_MAIN, WEP_SPELLPOWER);
+                player->ADD_GOSSIP_ITEM(5, "Healing",            GOSSIP_SENDER_MAIN, WEP_HEAL);
+                break;
+            case EQUIPMENT_SLOT_OFFHAND:
+                player->ADD_GOSSIP_ITEM(5, "Spirit",             GOSSIP_SENDER_MAIN, OFFHAND_SPIRIT);
+                player->ADD_GOSSIP_ITEM(5, "Stamina",            GOSSIP_SENDER_MAIN, OFFHAND_STAM);
+                player->ADD_GOSSIP_ITEM(5, "Frost Resistance",   GOSSIP_SENDER_MAIN, OFFHAND_FROSTRES);
+                break;
         }
         player->SEND_GOSSIP_MENU(DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
     }
@@ -904,57 +904,57 @@ bool GossipSelect_ProfessionNPC(Player* player, Creature* creature, uint32 sende
 {
     switch (action)
     {
-    case 1:
-        if (!player->HasSkill(SKILL_ALCHEMY))
-            CompleteLearnProfession(player, creature, SKILL_ALCHEMY);
-        break;
-    case 2:
-        if (!player->HasSkill(SKILL_BLACKSMITHING))
-            CompleteLearnProfession(player, creature, SKILL_BLACKSMITHING);
-        break;
-    case 3:
-        if (!player->HasSkill(SKILL_LEATHERWORKING))
-            CompleteLearnProfession(player, creature, SKILL_LEATHERWORKING);
-        break;
-    case 4:
-        if (!player->HasSkill(SKILL_TAILORING))
-            CompleteLearnProfession(player, creature, SKILL_TAILORING);
-        break;
-    case 5:
-        if (!player->HasSkill(SKILL_ENGINEERING))
-            CompleteLearnProfession(player, creature, SKILL_ENGINEERING);
-        break;
-    case 6:
-        if (!player->HasSkill(SKILL_ENCHANTING))
-            CompleteLearnProfession(player, creature, SKILL_ENCHANTING);
-        break;
-    case 7:
-    case 8:
-        break;
-    case 9:
-        if (!player->HasSkill(SKILL_HERBALISM))
-            CompleteLearnProfession(player, creature, SKILL_HERBALISM);
-        break;
-    case 10:
-        if (!player->HasSkill(SKILL_SKINNING))
-            CompleteLearnProfession(player, creature, SKILL_SKINNING);
-        break;
-    case 11:
-        if (!player->HasSkill(SKILL_MINING))
-            CompleteLearnProfession(player, creature, SKILL_MINING);
-        break;
-    case 12:
-        if (!player->HasSkill(SKILL_FIRST_AID))
-            CompleteLearnProfession(player, creature, SKILL_FIRST_AID);
-        break;
-    case 13:
-        if (!player->HasSkill(SKILL_FISHING))
-            CompleteLearnProfession(player, creature, SKILL_FISHING);
-        break;
-    case 14:
-        if (!player->HasSkill(SKILL_COOKING))
-            CompleteLearnProfession(player, creature, SKILL_COOKING);
-        break;
+        case 1:
+            if (!player->HasSkill(SKILL_ALCHEMY))
+                CompleteLearnProfession(player, creature, SKILL_ALCHEMY);
+            break;
+        case 2:
+            if (!player->HasSkill(SKILL_BLACKSMITHING))
+                CompleteLearnProfession(player, creature, SKILL_BLACKSMITHING);
+            break;
+        case 3:
+            if (!player->HasSkill(SKILL_LEATHERWORKING))
+                CompleteLearnProfession(player, creature, SKILL_LEATHERWORKING);
+            break;
+        case 4:
+            if (!player->HasSkill(SKILL_TAILORING))
+                CompleteLearnProfession(player, creature, SKILL_TAILORING);
+            break;
+        case 5:
+            if (!player->HasSkill(SKILL_ENGINEERING))
+                CompleteLearnProfession(player, creature, SKILL_ENGINEERING);
+            break;
+        case 6:
+            if (!player->HasSkill(SKILL_ENCHANTING))
+                CompleteLearnProfession(player, creature, SKILL_ENCHANTING);
+            break;
+        case 7:
+        case 8:
+            break;
+        case 9:
+            if (!player->HasSkill(SKILL_HERBALISM))
+                CompleteLearnProfession(player, creature, SKILL_HERBALISM);
+            break;
+        case 10:
+            if (!player->HasSkill(SKILL_SKINNING))
+                CompleteLearnProfession(player, creature, SKILL_SKINNING);
+            break;
+        case 11:
+            if (!player->HasSkill(SKILL_MINING))
+                CompleteLearnProfession(player, creature, SKILL_MINING);
+            break;
+        case 12:
+            if (!player->HasSkill(SKILL_FIRST_AID))
+                CompleteLearnProfession(player, creature, SKILL_FIRST_AID);
+            break;
+        case 13:
+            if (!player->HasSkill(SKILL_FISHING))
+                CompleteLearnProfession(player, creature, SKILL_FISHING);
+            break;
+        case 14:
+            if (!player->HasSkill(SKILL_COOKING))
+                CompleteLearnProfession(player, creature, SKILL_COOKING);
+            break;
     }
 
     player->CLOSE_GOSSIP_MENU();
@@ -1372,28 +1372,28 @@ inline std::string GetArenaBracketName(uint8 typeId)
 
     switch (BgQueueTypeId)
     {
-    case BATTLEGROUND_QUEUE_NA1v1:
-    case BATTLEGROUND_QUEUE_BE1v1:
-    case BATTLEGROUND_QUEUE_RL1v1:
-    case BATTLEGROUND_QUEUE_DS1v1:
-        return "Arena 1v1"; break;
-    case BATTLEGROUND_QUEUE_NA2v2:
-    case BATTLEGROUND_QUEUE_BE2v2:
-    case BATTLEGROUND_QUEUE_RL2v2:
-    case BATTLEGROUND_QUEUE_DS2v2:
-        return "Arena 2v2"; break;
-    case BATTLEGROUND_QUEUE_NA3v3:
-    case BATTLEGROUND_QUEUE_BE3v3:
-    case BATTLEGROUND_QUEUE_RL3v3:
-    case BATTLEGROUND_QUEUE_DS3v3:
-        return "Arena 3v3"; break;
-    case BATTLEGROUND_QUEUE_NA5v5:
-    case BATTLEGROUND_QUEUE_BE5v5:
-    case BATTLEGROUND_QUEUE_RL5v5:
-    case BATTLEGROUND_QUEUE_DS5v5:
-        return "Arena 5v5"; break;
-    default:
-        return "Arena Unknown";
+        case BATTLEGROUND_QUEUE_NA1v1:
+        case BATTLEGROUND_QUEUE_BE1v1:
+        case BATTLEGROUND_QUEUE_RL1v1:
+        case BATTLEGROUND_QUEUE_DS1v1:
+            return "Arena 1v1"; break;
+        case BATTLEGROUND_QUEUE_NA2v2:
+        case BATTLEGROUND_QUEUE_BE2v2:
+        case BATTLEGROUND_QUEUE_RL2v2:
+        case BATTLEGROUND_QUEUE_DS2v2:
+            return "Arena 2v2"; break;
+        case BATTLEGROUND_QUEUE_NA3v3:
+        case BATTLEGROUND_QUEUE_BE3v3:
+        case BATTLEGROUND_QUEUE_RL3v3:
+        case BATTLEGROUND_QUEUE_DS3v3:
+            return "Arena 3v3"; break;
+        case BATTLEGROUND_QUEUE_NA5v5:
+        case BATTLEGROUND_QUEUE_BE5v5:
+        case BATTLEGROUND_QUEUE_RL5v5:
+        case BATTLEGROUND_QUEUE_DS5v5:
+            return "Arena 5v5"; break;
+        default:
+            return "Arena Unknown";
     }
 }
 
@@ -1406,26 +1406,26 @@ inline uint8 GetArenaBracketType(uint8 bgtypeId)
 
     switch (BgQueueTypeId)
     {
-    case BATTLEGROUND_QUEUE_NA1v1:
-    case BATTLEGROUND_QUEUE_BE1v1:
-    case BATTLEGROUND_QUEUE_RL1v1:
-    case BATTLEGROUND_QUEUE_DS1v1:
-        return 1; break;
-    case BATTLEGROUND_QUEUE_NA2v2:
-    case BATTLEGROUND_QUEUE_BE2v2:
-    case BATTLEGROUND_QUEUE_RL2v2:
-    case BATTLEGROUND_QUEUE_DS2v2:
-        return 2; break;
-    case BATTLEGROUND_QUEUE_NA3v3:
-    case BATTLEGROUND_QUEUE_BE3v3:
-    case BATTLEGROUND_QUEUE_RL3v3:
-    case BATTLEGROUND_QUEUE_DS3v3:
-        return 3; break;
-    case BATTLEGROUND_QUEUE_NA5v5:
-    case BATTLEGROUND_QUEUE_BE5v5:
-    case BATTLEGROUND_QUEUE_RL5v5:
-    case BATTLEGROUND_QUEUE_DS5v5:
-        return 5; break;
+        case BATTLEGROUND_QUEUE_NA1v1:
+        case BATTLEGROUND_QUEUE_BE1v1:
+        case BATTLEGROUND_QUEUE_RL1v1:
+        case BATTLEGROUND_QUEUE_DS1v1:
+            return 1; break;
+        case BATTLEGROUND_QUEUE_NA2v2:
+        case BATTLEGROUND_QUEUE_BE2v2:
+        case BATTLEGROUND_QUEUE_RL2v2:
+        case BATTLEGROUND_QUEUE_DS2v2:
+            return 2; break;
+        case BATTLEGROUND_QUEUE_NA3v3:
+        case BATTLEGROUND_QUEUE_BE3v3:
+        case BATTLEGROUND_QUEUE_RL3v3:
+        case BATTLEGROUND_QUEUE_DS3v3:
+            return 3; break;
+        case BATTLEGROUND_QUEUE_NA5v5:
+        case BATTLEGROUND_QUEUE_BE5v5:
+        case BATTLEGROUND_QUEUE_RL5v5:
+        case BATTLEGROUND_QUEUE_DS5v5:
+            return 5; break;
     }
     return NULL;
 }
@@ -1437,54 +1437,54 @@ inline uint8 GetArenaBracketQueueChecker(Player* pPlayer, uint8 arenatype)
 
     switch (arenatype)
     {
-    case 1:
-    {
-        if (QueueCounter(pPlayer, BATTLEGROUND_NA1v1))
-            return BATTLEGROUND_NA1v1;
-        if (QueueCounter(pPlayer, BATTLEGROUND_BE1v1))
-            return BATTLEGROUND_BE1v1;
-        if (QueueCounter(pPlayer, BATTLEGROUND_RL1v1))
-            return BATTLEGROUND_RL1v1;
-        if (QueueCounter(pPlayer, BATTLEGROUND_DS1v1))
-            return BATTLEGROUND_DS1v1;
-        break;
-    }
-    case 2:
-    {
-        if (QueueCounter(pPlayer, BATTLEGROUND_NA2v2))
-            return BATTLEGROUND_NA2v2;
-        if (QueueCounter(pPlayer, BATTLEGROUND_BE2v2))
-            return BATTLEGROUND_BE2v2;
-        if (QueueCounter(pPlayer, BATTLEGROUND_RL2v2))
-            return BATTLEGROUND_RL2v2;
-        if (QueueCounter(pPlayer, BATTLEGROUND_DS2v2))
-            return BATTLEGROUND_DS2v2;
-        break;
-    }
-    case 3:
-    {
-        if (QueueCounter(pPlayer, BATTLEGROUND_NA3v3))
-            return BATTLEGROUND_NA3v3;
-        if (QueueCounter(pPlayer, BATTLEGROUND_BE3v3))
-            return BATTLEGROUND_BE3v3;
-        if (QueueCounter(pPlayer, BATTLEGROUND_RL3v3))
-            return BATTLEGROUND_RL3v3;
-        if (QueueCounter(pPlayer, BATTLEGROUND_DS3v3))
-            return BATTLEGROUND_DS3v3;
-        break;
-    }
-    case 5:
-    {
-        if (QueueCounter(pPlayer, BATTLEGROUND_NA5v5))
-            return BATTLEGROUND_NA5v5;
-        if (QueueCounter(pPlayer, BATTLEGROUND_BE5v5))
-            return BATTLEGROUND_BE5v5;
-        if (QueueCounter(pPlayer, BATTLEGROUND_RL5v5))
-            return BATTLEGROUND_RL5v5;
-        if (QueueCounter(pPlayer, BATTLEGROUND_DS5v5))
-            return BATTLEGROUND_DS5v5;
-        break;
-    }
+        case 1:
+        {
+            if (QueueCounter(pPlayer, BATTLEGROUND_NA1v1))
+                return BATTLEGROUND_NA1v1;
+            if (QueueCounter(pPlayer, BATTLEGROUND_BE1v1))
+                return BATTLEGROUND_BE1v1;
+            if (QueueCounter(pPlayer, BATTLEGROUND_RL1v1))
+                return BATTLEGROUND_RL1v1;
+            if (QueueCounter(pPlayer, BATTLEGROUND_DS1v1))
+                return BATTLEGROUND_DS1v1;
+            break;
+        }
+        case 2:
+        {
+            if (QueueCounter(pPlayer, BATTLEGROUND_NA2v2))
+                return BATTLEGROUND_NA2v2;
+            if (QueueCounter(pPlayer, BATTLEGROUND_BE2v2))
+                return BATTLEGROUND_BE2v2;
+            if (QueueCounter(pPlayer, BATTLEGROUND_RL2v2))
+                return BATTLEGROUND_RL2v2;
+            if (QueueCounter(pPlayer, BATTLEGROUND_DS2v2))
+                return BATTLEGROUND_DS2v2;
+            break;
+        }
+        case 3:
+        {
+            if (QueueCounter(pPlayer, BATTLEGROUND_NA3v3))
+                return BATTLEGROUND_NA3v3;
+            if (QueueCounter(pPlayer, BATTLEGROUND_BE3v3))
+                return BATTLEGROUND_BE3v3;
+            if (QueueCounter(pPlayer, BATTLEGROUND_RL3v3))
+                return BATTLEGROUND_RL3v3;
+            if (QueueCounter(pPlayer, BATTLEGROUND_DS3v3))
+                return BATTLEGROUND_DS3v3;
+            break;
+        }
+        case 5:
+        {
+            if (QueueCounter(pPlayer, BATTLEGROUND_NA5v5))
+                return BATTLEGROUND_NA5v5;
+            if (QueueCounter(pPlayer, BATTLEGROUND_BE5v5))
+                return BATTLEGROUND_BE5v5;
+            if (QueueCounter(pPlayer, BATTLEGROUND_RL5v5))
+                return BATTLEGROUND_RL5v5;
+            if (QueueCounter(pPlayer, BATTLEGROUND_DS5v5))
+                return BATTLEGROUND_DS5v5;
+            break;
+        }
     }
     return NULL;
 }
@@ -1552,60 +1552,60 @@ uint8 GenerateRandomArenaForBracket(uint8 bracket)
 
     switch (bracket)
     {
-    case GOSSIP_ACTION_1V1_ARENA:
-    {
-        switch (urand(1, 8))
+        case GOSSIP_ACTION_1V1_ARENA:
         {
-        case 1:
-        case 2:
-            return BATTLEGROUND_NA1v1; break;
-        case 3:
-        case 4:
-            return BATTLEGROUND_RL1v1; break;
-        case 5:
-        case 6:
-            return BATTLEGROUND_DS1v1; break;
-        case 7:
-        case 8:
-            return BATTLEGROUND_BE1v1; break;
+            switch (urand(1, 8))
+            {
+            case 1:
+            case 2:
+                return BATTLEGROUND_NA1v1; break;
+            case 3:
+            case 4:
+                return BATTLEGROUND_RL1v1; break;
+            case 5:
+            case 6:
+                return BATTLEGROUND_DS1v1; break;
+            case 7:
+            case 8:
+                return BATTLEGROUND_BE1v1; break;
+            }
+            break;
         }
-        break;
-    }
-    case GOSSIP_ACTION_2V2_ARENA:
-    {
-        switch (urand(1, 4))
+        case GOSSIP_ACTION_2V2_ARENA:
         {
-        case 1: return BATTLEGROUND_NA2v2; break;
-        case 2: return BATTLEGROUND_BE2v2; break;
-        case 3: return BATTLEGROUND_RL2v2; break;
-        case 4: return BATTLEGROUND_DS2v2; break;
+            switch (urand(1, 4))
+            {
+            case 1: return BATTLEGROUND_NA2v2; break;
+            case 2: return BATTLEGROUND_BE2v2; break;
+            case 3: return BATTLEGROUND_RL2v2; break;
+            case 4: return BATTLEGROUND_DS2v2; break;
+            }
+            break;
         }
-        break;
-    }
-    case GOSSIP_ACTION_3V3_ARENA:
-    {
-        switch (urand(1, 4))
+        case GOSSIP_ACTION_3V3_ARENA:
         {
-        case 1: return BATTLEGROUND_NA3v3; break;
-        case 2: return BATTLEGROUND_BE3v3; break;
-        case 3: return BATTLEGROUND_RL3v3; break;
-        case 4: return BATTLEGROUND_DS3v3; break;
+            switch (urand(1, 4))
+            {
+            case 1: return BATTLEGROUND_NA3v3; break;
+            case 2: return BATTLEGROUND_BE3v3; break;
+            case 3: return BATTLEGROUND_RL3v3; break;
+            case 4: return BATTLEGROUND_DS3v3; break;
+            }
+            break;
         }
-        break;
-    }
-    case GOSSIP_ACTION_5V5_ARENA:
-    {
-        switch (urand(1, 4))
+        case GOSSIP_ACTION_5V5_ARENA:
         {
-        case 1: return BATTLEGROUND_NA5v5; break;
-        case 2: return BATTLEGROUND_BE5v5; break;
-        case 3: return BATTLEGROUND_RL5v5; break;
-        case 4: return BATTLEGROUND_DS5v5; break;
+            switch (urand(1, 4))
+            {
+            case 1: return BATTLEGROUND_NA5v5; break;
+            case 2: return BATTLEGROUND_BE5v5; break;
+            case 3: return BATTLEGROUND_RL5v5; break;
+            case 4: return BATTLEGROUND_DS5v5; break;
+            }
+            break;
         }
-        break;
-    }
-    default:
-        return NULL;
+        default:
+            return NULL;
     }
     return NULL;
 }
@@ -1624,14 +1624,14 @@ bool JoinQueueArena(Player* pPlayer, GameObject* pGameObject, uint8 bgTypeid)
     {
         switch (grp->GetMembersCount())
         {
-        case 2:
-        case 3:
-        case 5:
-            joinAsGroup = true;
-            break;
-        default:
-            joinAsGroup = false;
-            break;
+            case 2:
+            case 3:
+            case 5:
+                joinAsGroup = true;
+                break;
+            default:
+                joinAsGroup = false;
+                break;
         }
     }
 
@@ -1794,16 +1794,16 @@ std::string GetClassString2(Player* pPlayer)
 {
     switch (pPlayer->GetClass())
     {
-    case CLASS_WARRIOR: return "Warrior"; break;
-    case CLASS_PALADIN: return "Paladin"; break;
-    case CLASS_HUNTER:  return "Hunter";  break;
-    case CLASS_ROGUE:   return "Rogue";   break;
-    case CLASS_PRIEST:  return "Priest";  break;
-    case CLASS_SHAMAN:  return "Shaman";  break;
-    case CLASS_MAGE:    return "Mage";    break;
-    case CLASS_WARLOCK: return "Warlock"; break;
-    case CLASS_DRUID:   return "Druid";   break;
-    default: return "Warrior"; break;
+        case CLASS_WARRIOR: return "Warrior"; break;
+        case CLASS_PALADIN: return "Paladin"; break;
+        case CLASS_HUNTER:  return "Hunter";  break;
+        case CLASS_ROGUE:   return "Rogue";   break;
+        case CLASS_PRIEST:  return "Priest";  break;
+        case CLASS_SHAMAN:  return "Shaman";  break;
+        case CLASS_MAGE:    return "Mage";    break;
+        case CLASS_WARLOCK: return "Warlock"; break;
+        case CLASS_DRUID:   return "Druid";   break;
+        default: return "Warrior"; break;
     }
 }
 
@@ -1876,10 +1876,10 @@ bool GossipHello_ArenaMaster(Player* pPlayer, GameObject* pGameObject)
             {
                 switch (GetArenaBracketType(bgTypeId))
                 {
-                case 1: SomeoneInQueue_One_v_One = true; break;
-                case 2: SomeoneInQueue_Two_v_Two = true; break;
-                case 3: SomeoneInQueue_Three_v_Three = true; break;
-                case 5: SomeoneInQueue_Five_v_Five = true; break;
+                    case 1: SomeoneInQueue_One_v_One = true; break;
+                    case 2: SomeoneInQueue_Two_v_Two = true; break;
+                    case 3: SomeoneInQueue_Three_v_Three = true; break;
+                    case 5: SomeoneInQueue_Five_v_Five = true; break;
                 }
 
                 if (!pPlayer->InBattleGroundQueueForBattleGroundQueueType(BgQueueTypeId))
@@ -1917,18 +1917,18 @@ bool GossipHello_ArenaMaster(Player* pPlayer, GameObject* pGameObject)
     {
         switch (grp->GetMembersCount())
         {
-        case 2:
-            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Group Queue 2v2 Arena", 0, GOSSIP_ACTION_2V2_ARENA);
-            break;
-        case 3:
-            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Group Queue 3v3 Arena", 0, GOSSIP_ACTION_3V3_ARENA);
-            break;
-        case 5:
-            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Group Queue 5v5 Arena\n\n", 0, GOSSIP_ACTION_5V5_ARENA);
-            break;
-        default:
-            ChatHandler(pPlayer->GetSession()).SendSysMessage("The number of members in your group will not be accepted to queue up.");
-            break;
+            case 2:
+                pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Group Queue 2v2 Arena", 0, GOSSIP_ACTION_2V2_ARENA);
+                break;
+            case 3:
+                pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Group Queue 3v3 Arena", 0, GOSSIP_ACTION_3V3_ARENA);
+                break;
+            case 5:
+                pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Group Queue 5v5 Arena\n\n", 0, GOSSIP_ACTION_5V5_ARENA);
+                break;
+            default:
+                ChatHandler(pPlayer->GetSession()).SendSysMessage("The number of members in your group will not be accepted to queue up.");
+                break;
         }
     }
 
@@ -2016,100 +2016,100 @@ bool GossipSelect_ArenaMaster(Player* pPlayer, GameObject* pGameObject, uint32 s
 
     switch (action)
     {
-    case GOSSIP_ACTION_BATTLEGROUND_WS:
-        pPlayer->GetSession()->SendBattleGroundList(pPlayer->GetGUID(), BATTLEGROUND_WS);
-        break;
-    case GOSSIP_ACTION_BATTLEGROUND_AB:
-        pPlayer->GetSession()->SendBattleGroundList(pPlayer->GetGUID(), BATTLEGROUND_AB);
-        break;
-    case GOSSIP_ACTION_BATTLEGROUND_AV:
-        pPlayer->GetSession()->SendBattleGroundList(pPlayer->GetGUID(), BATTLEGROUND_AV);
-        break;
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA1v1:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE1v1:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL1v1:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS1v1:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA2v2:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE2v2:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL2v2:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS2v2:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA3v3:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE3v3:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL3v3:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS3v3:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA5v5:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE5v5:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL5v5:
-    case GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS5v5:
-    {
-        if (pPlayer->HasForbiddenArenaItems(BattleGroundTypeId(action)))
+        case GOSSIP_ACTION_BATTLEGROUND_WS:
+            pPlayer->GetSession()->SendBattleGroundList(pPlayer->GetGUID(), BATTLEGROUND_WS);
+            break;
+        case GOSSIP_ACTION_BATTLEGROUND_AB:
+            pPlayer->GetSession()->SendBattleGroundList(pPlayer->GetGUID(), BATTLEGROUND_AB);
+            break;
+        case GOSSIP_ACTION_BATTLEGROUND_AV:
+            pPlayer->GetSession()->SendBattleGroundList(pPlayer->GetGUID(), BATTLEGROUND_AV);
+            break;
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA1v1:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE1v1:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL1v1:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS1v1:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA2v2:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE2v2:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL2v2:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS2v2:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA3v3:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE3v3:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL3v3:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS3v3:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_NA5v5:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_BE5v5:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_RL5v5:
+        case GOSSIP_ACTION_QUEUE_BATTLEGROUND_DS5v5:
         {
-            pGameObject->PlayDirectSound(847, pPlayer);
-            pPlayer->GetSession()->SendNotification("You are wearing forbidden items.");
+            if (pPlayer->HasForbiddenArenaItems(BattleGroundTypeId(action)))
+            {
+                pGameObject->PlayDirectSound(847, pPlayer);
+                pPlayer->GetSession()->SendNotification("You are wearing forbidden items.");
+                GossipHello_ArenaMaster(pPlayer, pGameObject);
+                return false;
+            }
+            else
+            {
+                if (!JoinQueueArena(pPlayer, pGameObject, action))
+                    ChatHandler(pPlayer->GetSession()).SendSysMessage("Something went wrong while joining queue. Already in another queue?");
+            }
             GossipHello_ArenaMaster(pPlayer, pGameObject);
-            return false;
+            break;
         }
-        else
+        case 300:
         {
-            if (!JoinQueueArena(pPlayer, pGameObject, action))
-                ChatHandler(pPlayer->GetSession()).SendSysMessage("Something went wrong while joining queue. Already in another queue?");
+            if (pPlayer)
+            {
+                pPlayer->SetGameMaster(false);
+                GossipHello_ArenaMaster(pPlayer, pGameObject);
+            }
+            break;
         }
-        GossipHello_ArenaMaster(pPlayer, pGameObject);
-        break;
-    }
-    case 300:
-    {
-        if (pPlayer)
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA1v1:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA2v2:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA3v3:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA5v5:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE1v1:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE2v2:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE3v3:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE5v5:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL1v1:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL2v2:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL3v3:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL5v5:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS1v1:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS2v2:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS3v3:
+        case GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS5v5:
         {
-            pPlayer->SetGameMaster(false);
+            BattleGroundQueue& queue = sBattleGroundMgr.m_battleGroundQueues[action - 100];
+            if (&queue)
+                queue.LeaveQueue(pPlayer, BattleGroundTypeId(action - 100));
             GossipHello_ArenaMaster(pPlayer, pGameObject);
+            break;
         }
-        break;
-    }
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA1v1:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA2v2:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA3v3:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_NA5v5:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE1v1:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE2v2:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE3v3:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_BE5v5:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL1v1:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL2v2:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL3v3:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_RL5v5:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS1v1:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS2v2:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS3v3:
-    case GOSSIP_ACTION_LEAVE_BATTLEGROUND_DS5v5:
-    {
-        BattleGroundQueue& queue = sBattleGroundMgr.m_battleGroundQueues[action - 100];
-        if (&queue)
-            queue.LeaveQueue(pPlayer, BattleGroundTypeId(action - 100));
-        GossipHello_ArenaMaster(pPlayer, pGameObject);
-        break;
-    }
-    case GOSSIP_ACTION_1V1_ARENA:
-    case GOSSIP_ACTION_2V2_ARENA:
-    case GOSSIP_ACTION_3V3_ARENA:
-    case GOSSIP_ACTION_5V5_ARENA:
-    {
-        if (pPlayer->HasForbiddenArenaItems(BattleGroundTypeId(action)))
+        case GOSSIP_ACTION_1V1_ARENA:
+        case GOSSIP_ACTION_2V2_ARENA:
+        case GOSSIP_ACTION_3V3_ARENA:
+        case GOSSIP_ACTION_5V5_ARENA:
         {
-            pGameObject->PlayDirectSound(847, pPlayer);
-            pPlayer->GetSession()->SendNotification("You are wearing forbidden items.");
+            if (pPlayer->HasForbiddenArenaItems(BattleGroundTypeId(action)))
+            {
+                pGameObject->PlayDirectSound(847, pPlayer);
+                pPlayer->GetSession()->SendNotification("You are wearing forbidden items.");
+                GossipHello_ArenaMaster(pPlayer, pGameObject);
+                return false;
+            }
+            else
+            {
+                if (!JoinQueueArena(pPlayer, pGameObject, GenerateRandomArenaForBracket(action)))
+                    ChatHandler(pPlayer->GetSession()).SendSysMessage("Something went wrong while joining queue. Already in another queue?");
+            }
             GossipHello_ArenaMaster(pPlayer, pGameObject);
-            return false;
+            pPlayer->SEND_GOSSIP_MENU(DEFAULT, pGameObject->GetObjectGuid());
+            break;
         }
-        else
-        {
-            if (!JoinQueueArena(pPlayer, pGameObject, GenerateRandomArenaForBracket(action)))
-                ChatHandler(pPlayer->GetSession()).SendSysMessage("Something went wrong while joining queue. Already in another queue?");
-        }
-        GossipHello_ArenaMaster(pPlayer, pGameObject);
-        pPlayer->SEND_GOSSIP_MENU(DEFAULT, pGameObject->GetObjectGuid());
-        break;
-    }
     }
 
     if (sender == GOSSIP_SENDER_SPECTATE_MATCH)
@@ -2254,12 +2254,12 @@ bool GossipSelect_ArenaMaster(Player* pPlayer, GameObject* pGameObject, uint32 s
         bool AllowTrinketSwap = sWorld.getConfig(CONFIG_BOOL_ARENA_ALLOW_TRINKET_SWAP);
         switch (action)
         {
-        case GOSSIP_ACTION_CONFIG_ARENA_ALLOW_ITEM_SWAP:
-            sWorld.setConfig(CONFIG_BOOL_ARENA_ALLOW_ITEM_SWAP, !AllowItemSwap);
-            break;
-        case GOSSIP_ACTION_CONFIG_ARENA_ALLOW_TRINKET_SWAP:
-            sWorld.setConfig(CONFIG_BOOL_ARENA_ALLOW_TRINKET_SWAP, !AllowTrinketSwap);
-            break;
+            case GOSSIP_ACTION_CONFIG_ARENA_ALLOW_ITEM_SWAP:
+                sWorld.setConfig(CONFIG_BOOL_ARENA_ALLOW_ITEM_SWAP, !AllowItemSwap);
+                break;
+            case GOSSIP_ACTION_CONFIG_ARENA_ALLOW_TRINKET_SWAP:
+                sWorld.setConfig(CONFIG_BOOL_ARENA_ALLOW_TRINKET_SWAP, !AllowTrinketSwap);
+                break;
         }
         GossipHello_ArenaMaster(pPlayer, pGameObject);
     }
@@ -2341,29 +2341,29 @@ struct npc_nagrand_tornado : public ScriptedAI
         {
             switch (Events)
             {
-            case EVENT_KNOCK_BACK:
-            {
-                std::list<Player*> players;
-                m_creature->GetAlivePlayerListInRange(m_creature, players, ATTACK_DISTANCE);
-
-                for (const auto& pTarget : players)
+                case EVENT_KNOCK_BACK:
                 {
-                    // TBC spell i guess: https://tbc.wowhead.com/spell=43120/cyclone
-                    // Clip: https://youtu.be/CJNQwBQh2Ms?t=148
-                    // Lowered the damage since its vanilla and players have less health and lower level players can also play arena.
-                    pTarget->KnockBackFrom(m_creature, 15, 10);
-                    float dmg = urand(((pTarget->GetMaxHealth() * 10.0f) / 100), ((pTarget->GetMaxHealth() * 15.0f) / 100));
-                    pTarget->DealDamage(pTarget, dmg, nullptr, SPELL_DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NATURE, nullptr, false);
+                    std::list<Player*> players;
+                    m_creature->GetAlivePlayerListInRange(m_creature, players, ATTACK_DISTANCE);
+
+                    for (const auto& pTarget : players)
+                    {
+                        // TBC spell i guess: https://tbc.wowhead.com/spell=43120/cyclone
+                        // Clip: https://youtu.be/CJNQwBQh2Ms?t=148
+                        // Lowered the damage since its vanilla and players have less health and lower level players can also play arena.
+                        pTarget->KnockBackFrom(m_creature, 15, 10);
+                        float dmg = urand(((pTarget->GetMaxHealth() * 10.0f) / 100), ((pTarget->GetMaxHealth() * 15.0f) / 100));
+                        pTarget->DealDamage(pTarget, dmg, nullptr, SPELL_DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NATURE, nullptr, false);
+                    }
+                    m_events.ScheduleEvent(EVENT_KNOCK_BACK, 2000);
+                    break;
                 }
-                m_events.ScheduleEvent(EVENT_KNOCK_BACK, 2000);
-                break;
-            }
-            case EVENT_DESPAWN:
-            {
-                m_creature->RemoveAurasDueToSpell(25160);
-                m_creature->DespawnOrUnsummon(4000);
-                break;
-            }
+                case EVENT_DESPAWN:
+                {
+                    m_creature->RemoveAurasDueToSpell(25160);
+                    m_creature->DespawnOrUnsummon(4000);
+                    break;
+                }
             }
         }
     }
@@ -2392,12 +2392,12 @@ bool GossipSelect_ArenaMaster_Ext(Player* pPlayer, GameObject* pGameObject, uint
     {
         switch (action)
         {
-        case GOSSIP_ACTION_CONFIG_ARENA_MAX_ITEMLEVEL:
-            sWorld.setConfig(CONFIG_UINT32_ARENA_MAX_ITEMLEVEL, value);
-            break;
-        case GOSSIP_ACTION_CONFIG_ARENA_MAX_ITEMPATCH:
-            sWorld.setConfig(CONFIG_UINT32_ARENA_MAX_ITEMPATCH, value);
-            break;
+            case GOSSIP_ACTION_CONFIG_ARENA_MAX_ITEMLEVEL:
+                sWorld.setConfig(CONFIG_UINT32_ARENA_MAX_ITEMLEVEL, value);
+                break;
+            case GOSSIP_ACTION_CONFIG_ARENA_MAX_ITEMPATCH:
+                sWorld.setConfig(CONFIG_UINT32_ARENA_MAX_ITEMPATCH, value);
+                break;
         }
         GossipHello_ArenaMaster(pPlayer, pGameObject);
     }
@@ -2432,7 +2432,7 @@ bool GossipHello_npc_arena_watcher(Player* pPlayer, Creature* pCreature)
     if (!pCreature->InArena())
         return false;
 
-    if (!pPlayer->HasAura(SPELL_ALLIANCE_FLAG) && !pPlayer->HasAura(SPELL_HORDE_FLAG))
+    if (pPlayer->GetVisibility() != VISIBILITY_GROUP_STEALTH && !pPlayer->HasAura(SPELL_ALLIANCE_FLAG) && !pPlayer->HasAura(SPELL_HORDE_FLAG))
         pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "I'm ready!\n\n", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_READY);
 
 
@@ -2454,72 +2454,72 @@ bool GossipSelect_npc_arena_watcher(Player* pPlayer, Creature* pCreature, uint32
 
     switch (uiAction)
     {
-    case GOSSIP_ACTION_READY:
-    {
-        switch (pPlayer->GetBGTeamId())
+        case GOSSIP_ACTION_READY:
         {
-        case TEAM_ALLIANCE:
-            pPlayer->AddAura(SPELL_ALLIANCE_FLAG);
-            break;
-        case TEAM_HORDE:
-            pPlayer->AddAura(SPELL_HORDE_FLAG);
-            break;
-        }
-        pPlayer->PlayDirectSound(8960, pPlayer);
-
-        uint32 maxplayers_ALLIANCE = 0;
-        uint32 maxplayers_HORDE = 0;
-
-        Map::PlayerList const& PlayerList = pCreature->GetMap()->GetPlayers();
-        for (Map::PlayerList::const_iterator itr = PlayerList.begin(); itr != PlayerList.end(); ++itr)
-        {
-            Player* pPlayer = itr->getSource();
-
-            if (!pPlayer)
-                continue;
-
-            if (pPlayer->HasAura(SPELL_ALLIANCE_FLAG))
-                ++maxplayers_ALLIANCE;
-
-            if (pPlayer->HasAura(SPELL_HORDE_FLAG))
-                ++maxplayers_HORDE;
-        }
-
-        std::string announce;
-
-        BattleGround* bg = nullptr;
-        bg = sBattleGroundMgr.GetBattleGroundTemplate(BattleGroundTypeId(pPlayer->GetBattleGroundTypeId()));
-
-        if (bg)
-        {
-            if (maxplayers_HORDE + maxplayers_ALLIANCE == bg->GetMaxPlayers())
-                announce = "Both Teams are ready to fight!";
-            else if (maxplayers_HORDE == bg->GetMaxPlayersPerTeam())
-                announce = "The Horde is ready to fight!";
-            else if (maxplayers_ALLIANCE == bg->GetMaxPlayersPerTeam())
-                announce = "The Alliance is ready to fight!";
-
-            if (!announce.empty())
+            switch (pPlayer->GetBGTeamId())
             {
-                pCreature->MonsterYell(announce.c_str());
-                pCreature->HandleEmoteCommand(EMOTE_ONESHOT_SHOUT);
+                case TEAM_ALLIANCE:
+                    pPlayer->AddAura(SPELL_ALLIANCE_FLAG);
+                    break;
+                case TEAM_HORDE:
+                    pPlayer->AddAura(SPELL_HORDE_FLAG);
+                    break;
             }
+            pPlayer->PlayDirectSound(8960, pPlayer);
+
+            uint32 maxplayers_ALLIANCE = 0;
+            uint32 maxplayers_HORDE = 0;
+
+            Map::PlayerList const& PlayerList = pCreature->GetMap()->GetPlayers();
+            for (Map::PlayerList::const_iterator itr = PlayerList.begin(); itr != PlayerList.end(); ++itr)
+            {
+                Player* pPlayer = itr->getSource();
+
+                if (!pPlayer)
+                    continue;
+
+                if (pPlayer->HasAura(SPELL_ALLIANCE_FLAG))
+                    ++maxplayers_ALLIANCE;
+
+                if (pPlayer->HasAura(SPELL_HORDE_FLAG))
+                    ++maxplayers_HORDE;
+            }
+
+            std::string announce;
+
+            BattleGround* bg = nullptr;
+            bg = sBattleGroundMgr.GetBattleGroundTemplate(BattleGroundTypeId(pPlayer->GetBattleGroundTypeId()));
+
+            if (bg)
+            {
+                if (maxplayers_HORDE + maxplayers_ALLIANCE == bg->GetMaxPlayers())
+                    announce = "Both Teams are ready to fight!";
+                else if (maxplayers_HORDE == bg->GetMaxPlayersPerTeam())
+                    announce = "The Horde is ready to fight!";
+                else if (maxplayers_ALLIANCE == bg->GetMaxPlayersPerTeam())
+                    announce = "The Alliance is ready to fight!";
+
+                if (!announce.empty())
+                {
+                    pCreature->MonsterYell(announce.c_str());
+                    pCreature->HandleEmoteCommand(EMOTE_ONESHOT_SHOUT);
+                }
+            }
+            pPlayer->CLOSE_GOSSIP_MENU();
         }
-        pPlayer->CLOSE_GOSSIP_MENU();
-    }
-    break;
-    case GOSSIP_ACTION_LEAVE:
-    {
-        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Yes im sure.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_CONFIRM_LEAVE);
-        pPlayer->SEND_GOSSIP_MENU(NPC_TEXT_SELECT, pCreature->GetObjectGuid());
-    }
-    break;
-    case GOSSIP_ACTION_CONFIRM_LEAVE:
-    {
-        pPlayer->LeaveBattleground();
-        pPlayer->CLOSE_GOSSIP_MENU();
-    }
-    break;
+        break;
+        case GOSSIP_ACTION_LEAVE:
+        {
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Yes im sure.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_CONFIRM_LEAVE);
+            pPlayer->SEND_GOSSIP_MENU(NPC_TEXT_SELECT, pCreature->GetObjectGuid());
+        }
+        break;
+        case GOSSIP_ACTION_CONFIRM_LEAVE:
+        {
+            pPlayer->LeaveBattleground();
+            pPlayer->CLOSE_GOSSIP_MENU();
+        }
+        break;
     }
     return true;
 }
