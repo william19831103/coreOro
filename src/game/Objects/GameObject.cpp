@@ -517,6 +517,9 @@ void GameObject::Update(uint32 update_diff, uint32 /*p_time*/)
 
                     if (ok && (!AI() || !AI()->OnUse(ok)))
                     {
+                        if (ok->ToPlayer()->IsArenaSpectator() && ok->ToPlayer()->InArena())
+                            return;
+
                         if (owner)
                             owner->CastSpell(ok, goInfo->trap.spellId, true, nullptr, nullptr, GetObjectGuid());
                         else
@@ -1383,15 +1386,15 @@ void GameObject::Use(Unit* user)
         if (m_goInfo->CannotBeUsedUnderImmunity() && user->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE))
             return;
 
+        if (user->ToPlayer()->IsArenaSpectator() && user->ToPlayer()->InArena())
+            return;
+
         if (!m_goInfo->IsUsableMounted() && user->IsMounted())
             user->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
 
         if (sScriptMgr.OnGameObjectUse((Player*)user, this))
             return;
     }
-
-    if (user->ToPlayer()->IsArenaSpectator() && user->ToPlayer()->InArena())
-        return;
 
     // test only for exist cooldown data (cooldown timer used for door/buttons reset that not have use cooldown)
     if (uint32 cooldown = GetGOInfo()->GetCooldown())

@@ -2344,13 +2344,17 @@ struct npc_nagrand_tornado : public ScriptedAI
                 case EVENT_KNOCK_BACK:
                 {
                     std::list<Player*> players;
-                    m_creature->GetAlivePlayerListInRange(m_creature, players, ATTACK_DISTANCE);
+                    m_creature->GetAlivePlayerListInRange(m_creature, players, INSPECT_DISTANCE);
 
                     for (const auto& pTarget : players)
                     {
                         // TBC spell i guess: https://tbc.wowhead.com/spell=43120/cyclone
                         // Clip: https://youtu.be/CJNQwBQh2Ms?t=148
                         // Lowered the damage since its vanilla and players have less health and lower level players can also play arena.
+
+                        if (pTarget->IsArenaSpectator())
+                            continue;
+
                         pTarget->KnockBackFrom(m_creature, 15, 10);
                         float dmg = urand(((pTarget->GetMaxHealth() * 10.0f) / 100), ((pTarget->GetMaxHealth() * 15.0f) / 100));
                         pTarget->DealDamage(pTarget, dmg, nullptr, SPELL_DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NATURE, nullptr, false);
