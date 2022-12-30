@@ -1,12 +1,12 @@
-![VGFVEYQ4QEFIs1623349988333](https://user-images.githubusercontent.com/357606/210048403-071b2116-9f99-4fdd-8dbc-e77f8bb63c6c.jpg)
+![vanilla_arena-min](https://user-images.githubusercontent.com/357606/210061106-d7628cdd-3e9a-454e-9998-67477786d041.png)
 
 
 
-# VMaNGOS Arena (ONLY FOR THE OLD 1.12 CLIENT!)
+## VMaNGOS Arena (ONLY FOR THE OLD 1.12 CLIENT!)
 One of my first Projects for VMaNGOS with almost no coding knowledge just copy-paste, endless tries and a lot of beer.
 I know it's horrible coded... i don't care. It works and was funny.
 
-### Features:
+## Features:
 
 - Arena Watcher NPC in the Arena: speak to him to start the arena immediately (if everyone does it).
 - Solo & Group queue for 1v1, 2v2, 3v3 and 5v5
