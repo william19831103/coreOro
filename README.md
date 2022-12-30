@@ -1,5 +1,5 @@
-![vanilla_arena-min](https://user-images.githubusercontent.com/357606/210061106-d7628cdd-3e9a-454e-9998-67477786d041.png)
 
+![vanilla_arena-min(1)](https://user-images.githubusercontent.com/357606/210062280-297a049b-0ece-4873-a943-2be9aec5b72a.png)
 
 
 ## VMaNGOS Arena (ONLY FOR THE OLD 1.12 CLIENT!)
