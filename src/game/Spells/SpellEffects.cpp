@@ -3382,7 +3382,7 @@ void Spell::EffectSummonWild(SpellEffectIndex effIdx)
 
     float radius = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[effIdx]));
     int32 duration = m_spellInfo->GetDuration();
-    TempSummonType summonType = (duration == 0) ? TEMPSUMMON_DEAD_DESPAWN : TEMPSUMMON_TIMED_COMBAT_OR_DEAD_DESPAWN;
+    TempSummonType summonType = (duration == 0) ? TEMPSUMMON_DEAD_DESPAWN : TEMPSUMMON_TIMED_DEATH_AND_DEAD_DESPAWN;
 
     int32 amount = damage > 0 ? damage : 1;
 
@@ -5407,7 +5407,7 @@ void Spell::EffectSanctuary(SpellEffectIndex effIdx)
     unitTarget->CombatStop();
 
     // Flask of Petrification does not cause mobs to stop attacking.
-    if (!m_spellInfo->HasAttribute(SPELL_ATTR_EX2_FOOD_BUFF))
+    if (!m_spellInfo->HasAttribute(SPELL_ATTR_EX2_RETAIN_ITEM_CAST))
     {
         HostileReference* pReference = unitTarget->GetHostileRefManager().getFirst();
         while (pReference)

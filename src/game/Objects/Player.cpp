@@ -722,7 +722,7 @@ Player::Player(WorldSession* session) : Unit(),
 
     m_justBoarded = false;
 
-    m_cameraUpdateTimer = BATCHING_INTERVAL;
+    m_cameraUpdateTimer = 0;
     m_longSightSpell = 0;
     m_longSightRange = 0.0f;
 }
@@ -1549,13 +1549,13 @@ void Player::Update(uint32 update_diff, uint32 p_time)
     if (now > m_lastTick)
         UpdateItemDuration(uint32(now - m_lastTick));
 
-    if (!m_pendingCameraUpdate.IsEmpty())
+    if (m_cameraUpdateTimer)
     {
         if (m_cameraUpdateTimer <= update_diff)
         {
             SetGuidValue(PLAYER_FARSIGHT, m_pendingCameraUpdate);
             m_pendingCameraUpdate.Clear();
-            m_cameraUpdateTimer = BATCHING_INTERVAL;
+            m_cameraUpdateTimer = 0;
         }
         else
             m_cameraUpdateTimer -= update_diff;
@@ -4179,7 +4179,7 @@ bool Player::IsNeedCastPassiveLikeSpellAtLearn(SpellEntry const* spellInfo) cons
 
     // note: form passives activated with shapeshift spells be implemented by HandleShapeshiftBoosts instead of spell_learn_spell
     // talent dependent passives activated at form apply have proper stance data
-    bool need_cast = (!spellInfo->Stances || (!form && (spellInfo->AttributesEx2 & SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT)));
+    bool need_cast = (!spellInfo->Stances || (!form && (spellInfo->AttributesEx2 & SPELL_ATTR_EX2_ALLOW_WHILE_NOT_SHAPESHIFTED)));
 
     // Check CasterAuraStates
     return need_cast && (!spellInfo->CasterAuraState || HasAuraState(AuraState(spellInfo->CasterAuraState)));
@@ -19384,7 +19384,10 @@ void Player::ScheduleCameraUpdate(ObjectGuid guid)
     if (guid.IsEmpty() && m_pendingCameraUpdate.IsEmpty())
         SetGuidValue(PLAYER_FARSIGHT, guid);
     else
+    {
+        m_cameraUpdateTimer = BATCHING_INTERVAL;
         m_pendingCameraUpdate = guid;
+    }
 }
 
 void Player::InitPrimaryProfessions()
@@ -22589,7 +22592,7 @@ bool Player::HasFreeBattleGroundQueueId() const
     return false;
 }
 
-void Player::TaxiStepFinished()
+void Player::TaxiStepFinished(bool lastPointReached)
 {
     if (!IsInWorld())
         return;
@@ -22654,7 +22657,8 @@ void Player::TaxiStepFinished()
     else
     {
         // When the player reaches the last flight point, teleport to destination taxi node location
-        TeleportTo(curDestNode->map_id, curDestNode->x, curDestNode->y, curDestNode->z, GetOrientation());
+        if (lastPointReached)
+            TeleportTo(curDestNode->map_id, curDestNode->x, curDestNode->y, curDestNode->z, GetOrientation());
         m_taxi.ClearTaxiDestinations();        // not destinations, clear source node
     } 
 }
@@ -22849,7 +22853,7 @@ void Player::AddCooldown(SpellEntry const& spellEntry, ItemPrototype const* item
     {
         // shoot spells used equipped item cooldown values already assigned in GetAttackTime(RANGED_ATTACK)
         // prevent 0 cooldowns set by another way
-        if (spellEntry.HasAttribute(SPELL_ATTR_USES_RANGED_SLOT) && !spellEntry.HasAttribute(SPELL_ATTR_EX2_NOT_RESET_AUTO_ACTIONS))
+        if (spellEntry.HasAttribute(SPELL_ATTR_USES_RANGED_SLOT) && !spellEntry.HasAttribute(SPELL_ATTR_EX2_DO_NOT_RESET_COMBAT_TIMERS))
             recTime += GetFloatValue(UNIT_FIELD_RANGEDATTACKTIME);
     }
 
