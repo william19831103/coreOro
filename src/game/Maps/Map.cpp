@@ -1723,7 +1723,7 @@ void Map::AddObjectToRemoveList(WorldObject* obj)
     MANGOS_ASSERT(obj->GetMapId() == GetId() && obj->GetInstanceId() == GetInstanceId());
 
     obj->CleanupsBeforeDelete();                            // remove or simplify at least cross referenced links
-    std::unique_lock<std::mutex> lock(i_objectsToRemove_lock);
+    std::lock_guard<std::mutex> lock(i_objectsToRemove_lock);
     i_objectsToRemove.insert(obj);
 }
 
@@ -1732,7 +1732,7 @@ void Map::RemoveAllObjectsInRemoveList()
     if (i_objectsToRemove.empty())
         return;
 
-    std::unique_lock<std::mutex> lock(i_objectsToRemove_lock);
+    std::lock_guard<std::mutex> lock(i_objectsToRemove_lock);
     while (!i_objectsToRemove.empty())
     {
         WorldObject* obj = *i_objectsToRemove.begin();
@@ -2450,7 +2450,7 @@ void Map::ScriptsStart(ScriptMapMap const& scripts, uint32 id, ObjectGuid source
     ScriptMap const* s2 = &(s->second);
     bool immedScript = false;
     
-    std::unique_lock<MapMutexType> lock(m_scriptSchedule_lock);
+    std::lock_guard<MapMutexType> lock(m_scriptSchedule_lock);
     for (ScriptMap::const_iterator iter = s2->begin(); iter != s2->end(); ++iter)
     {
         ScriptAction sa;
@@ -2475,7 +2475,7 @@ void Map::ScriptCommandStart(ScriptInfo const& script, uint32 delay, ObjectGuid 
     sa.targetGuid = targetGuid;
 
     sa.script = &script;
-    std::unique_lock<std::mutex> lock(m_scriptSchedule_lock);
+    std::lock_guard<std::mutex> lock(m_scriptSchedule_lock);
     m_scriptSchedule.insert(ScriptScheduleMap::value_type(time_t(sWorld.GetGameTime() + delay), sa));
     sScriptMgr.IncreaseScheduledScriptsCount();
 }
@@ -2736,14 +2736,14 @@ void Map::AddUpdateObject(Object *obj)
 {
     if (_processingSendObjUpdates)
         return;
-    std::unique_lock<std::mutex> lock(i_objectsToClientUpdate_lock);
+    std::lock_guard<std::mutex> lock(i_objectsToClientUpdate_lock);
     i_objectsToClientUpdate.insert(obj);
 }
 
 void Map::RemoveUpdateObject(Object *obj)
 {
     ASSERT(!_processingSendObjUpdates);
-    std::unique_lock<std::mutex> lock(i_objectsToClientUpdate_lock);
+    std::lock_guard<std::mutex> lock(i_objectsToClientUpdate_lock);
     i_objectsToClientUpdate.erase( obj );
 }
 
@@ -2751,26 +2751,26 @@ void Map::AddRelocatedUnit(Unit *obj)
 {
     if (_processingUnitsRelocation)
         return;
-    std::unique_lock<std::mutex> lock(i_unitsRelocated_lock);
+    std::lock_guard<std::mutex> lock(i_unitsRelocated_lock);
     i_unitsRelocated.insert(obj);
 }
 
 void Map::RemoveRelocatedUnit(Unit *obj)
 {
     ASSERT(!_processingUnitsRelocation);
-    std::unique_lock<std::mutex> lock(i_unitsRelocated_lock);
+    std::lock_guard<std::mutex> lock(i_unitsRelocated_lock);
     i_unitsRelocated.erase(obj);
 }
 
 void Map::AddUnitToMovementUpdate(Unit *unit)
 {
-    std::unique_lock<std::mutex> lock(unitsMvtUpdate_lock);
+    std::lock_guard<std::mutex> lock(unitsMvtUpdate_lock);
     unitsMvtUpdate.insert(unit);
 }
 
 void Map::RemoveUnitFromMovementUpdate(Unit *unit)
 {
-    std::unique_lock<std::mutex> lock(unitsMvtUpdate_lock);
+    std::lock_guard<std::mutex> lock(unitsMvtUpdate_lock);
     unitsMvtUpdate.erase(unit);
 }
 
@@ -2921,7 +2921,7 @@ uint32 Map::GenerateLocalLowGuid(HighGuid guidhigh)
 {
     // TODOLOCK
     // TODO: for map local guid counters possible force reload map instead shutdown server at guid counter overflow
-    std::unique_lock<std::mutex> lock(m_guidGenerators_lock);
+    std::lock_guard<std::mutex> lock(m_guidGenerators_lock);
     uint32 guid = 0;
     switch (guidhigh)
     {
@@ -3230,14 +3230,14 @@ VMAP::ModelInstance* Map::FindCollisionModel(float x1, float y1, float z1, float
 
 void Map::RemoveGameObjectModel(const GameObjectModel &model)
 {
-    std::unique_lock<std::shared_timed_mutex> lock(_dynamicTree_lock);
+    std::lock_guard<std::shared_timed_mutex> lock(_dynamicTree_lock);
     _dynamicTree.remove(model);
     _dynamicTree.balance();
 }
 
 void Map::InsertGameObjectModel(const GameObjectModel &model)
 {
-    std::unique_lock<std::shared_timed_mutex> lock(_dynamicTree_lock);
+    std::lock_guard<std::shared_timed_mutex> lock(_dynamicTree_lock);
     _dynamicTree.insert(model);
     _dynamicTree.balance();
 }
@@ -3370,7 +3370,7 @@ bool Map::ShouldUpdateMap(uint32 now, uint32 inactiveTimeLimit)
     // in AddCorpseToRemove because it can be called concurrently.
     if (!update)
     {
-        std::unique_lock<MapMutexType> guard(_corpseRemovalLock);
+        std::lock_guard<MapMutexType> guard(_corpseRemovalLock);
         if (!_corpseToRemove.empty())
             update = true;
     }
@@ -3384,7 +3384,7 @@ bool Map::ShouldUpdateMap(uint32 now, uint32 inactiveTimeLimit)
  */
 void Map::AddCorpseToRemove(Corpse* corpse, ObjectGuid looter_guid)
 {
-    std::unique_lock<MapMutexType> guard(_corpseRemovalLock);
+    std::lock_guard<MapMutexType> guard(_corpseRemovalLock);
     _corpseToRemove.emplace_back(corpse, looter_guid);
 }
 
@@ -3393,7 +3393,7 @@ void Map::AddCorpseToRemove(Corpse* corpse, ObjectGuid looter_guid)
 */
 void Map::RemoveBones(Corpse* corpse)
 {
-    std::unique_lock<MapMutexType> guard(_bonesLock);
+    std::lock_guard<MapMutexType> guard(_bonesLock);
     _bones.remove(corpse);
 }
 
@@ -3402,7 +3402,7 @@ void Map::RemoveBones(Corpse* corpse)
  */
 void Map::RemoveCorpses(bool unload)
 {
-    std::unique_lock<MapMutexType> guard(_corpseRemovalLock);
+    std::lock_guard<MapMutexType> guard(_corpseRemovalLock);
     for (auto iter = _corpseToRemove.begin(); iter != _corpseToRemove.end();)
     {
         auto corpse = iter->first;
@@ -3465,7 +3465,7 @@ void Map::RemoveCorpses(bool unload)
 
             // Only take the lock for a second
             {
-                std::unique_lock<MapMutexType> guard(_bonesLock);
+                std::lock_guard<MapMutexType> guard(_bonesLock);
                 _bones.push_back(bones);
             }
         }
@@ -3496,7 +3496,7 @@ void Map::RemoveOldBones(uint32 const diff)
     _bonesCleanupTimer = 0u;
 
     time_t now = time(nullptr);
-    std::unique_lock<MapMutexType> guard(_bonesLock);
+    std::lock_guard<MapMutexType> guard(_bonesLock);
     for (auto iter = _bones.begin(); iter != _bones.end();)
     {
         Corpse* bones = *iter;
