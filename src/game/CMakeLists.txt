@@ -220,6 +220,7 @@ set (game_SRCS
     AuraRemovalMgr.h
     AutoBroadCastMgr.h
     Camera.h
+    ClientDefines.h
     Conditions.h
     CreatureGroups.h
     Formulas.h
@@ -234,6 +235,7 @@ set (game_SRCS
     ItemEnchantmentMgr.h
     Language.h
     LootMgr.h
+    LoveIsInTheAir.h
     ObjectAccessor.h
     ObjectGridLoader.h
     ObjectGuid.h

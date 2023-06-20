@@ -54,7 +54,7 @@ SpellSpecific Spells::GetSpellSpecific(uint32 spellId)
             else
             {
                 // Well Fed buffs (must be exclusive with Food / Drink replenishment effects, or else Well Fed will cause them to be removed)
-                if (spellInfo->AttributesEx2 & SPELL_ATTR_EX2_FOOD_BUFF)
+                if (spellInfo->AttributesEx2 & SPELL_ATTR_EX2_RETAIN_ITEM_CAST)
                     return SPELL_WELL_FED;
             }
             break;
@@ -431,7 +431,7 @@ WeaponAttackType SpellEntry::GetWeaponAttackType() const
     switch (DmgClass)
     {
         case SPELL_DAMAGE_CLASS_MELEE:
-            if (HasAttribute(SPELL_ATTR_EX3_REQ_OFFHAND))
+            if (HasAttribute(SPELL_ATTR_EX3_REQUIRES_OFFHAND_WEAPON))
                 return OFF_ATTACK;
             else
                 return BASE_ATTACK;
@@ -441,7 +441,7 @@ WeaponAttackType SpellEntry::GetWeaponAttackType() const
             break;
         default:
             // Wands
-            if (HasAttribute(SPELL_ATTR_EX2_AUTOREPEAT_FLAG))
+            if (HasAttribute(SPELL_ATTR_EX2_AUTO_REPEAT))
                 return RANGED_ATTACK;
             else
                 return BASE_ATTACK;
@@ -455,6 +455,10 @@ uint32 SpellEntry::GetCastTime(SpellCaster const* caster, Spell* spell) const
     {
         // some triggered spells have data only usable for client
         if (spell->IsTriggeredSpellWithRedundentData())
+            return 0;
+
+        // chance on hit procs should be instant
+        if (spell->IsTriggered() && spell->IsCastByItem())
             return 0;
 
         // spell targeted to non-trading trade slot item instant at trade success apply
@@ -931,7 +935,7 @@ bool SpellEntry::IsPositiveEffect(SpellEffectIndex effIndex, WorldObject const* 
                             SpellFamilyName == SPELLFAMILY_GENERIC)
                         return false;
                     // but not this if this first effect (don't found better check)
-                    if (Attributes & 0x4000000 && effIndex == EFFECT_INDEX_0)
+                    if (Attributes & SPELL_ATTR_AURA_IS_DEBUFF && effIndex == EFFECT_INDEX_0)
                         return false;
                     break;
                 case SPELL_AURA_MOD_SCALE:
@@ -1038,7 +1042,7 @@ SpellCastResult SpellEntry::GetErrorAtShapeshiftedCast(uint32 form) const
     else
     {
         // needs shapeshift
-        if (!(AttributesEx2 & SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT) && Stances != 0)
+        if (!(AttributesEx2 & SPELL_ATTR_EX2_ALLOW_WHILE_NOT_SHAPESHIFTED) && Stances != 0)
             return SPELL_FAILED_ONLY_SHAPESHIFT;
     }
 

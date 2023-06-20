@@ -166,6 +166,13 @@ struct SpellPeriodicAuraLogInfo
 
 uint32 CreateProcExtendMask(SpellNonMeleeDamage* damageInfo, SpellMissInfo missCondition);
 
+enum SpellProcEventTriggerCheck
+{
+    SPELL_PROC_TRIGGER_FAILED       = 0,
+    SPELL_PROC_TRIGGER_ROLL_FAILED  = 1,
+    SPELL_PROC_TRIGGER_OK           = 2,
+};
+
 enum SpellAuraProcResult
 {
     SPELL_AURA_PROC_OK              = 0,                    // proc was processed, will remove charges
@@ -306,9 +313,6 @@ struct ProhibitSpellInfo
     SpellSchoolMask SchoolMask;
     uint32 RestingMsTime;
 };
-
-#define DEBUG_UNIT(unit, flags, ...) do { if (unit->GetDebugFlags() & flags) unit->Debug(flags, __VA_ARGS__); } while (false)
-#define DEBUG_UNIT_IF(cond, unit, flags, ...) do { if (unit->GetDebugFlags() & flags && cond) unit->Debug(flags, __VA_ARGS__); } while (false)
 
 struct ProcTriggeredData
 {
@@ -592,18 +596,6 @@ class Unit : public SpellCaster
         void HandleEmote(uint32 emote_id);                  // auto-select command/state
         void HandleEmoteCommand(uint32 emote_id);
         void HandleEmoteState(uint32 emote_id);
-                                                                               // debug.
-        void Debug(uint32 debugType, char const* str, ...) const ATTR_PRINTF(3, 4);
-        void SetDebugger(ObjectGuid playerGuid, uint32 flags)
-        {
-            m_debuggerGuid = playerGuid;
-            m_debugFlags = flags;
-        }
-        uint32 GetDebugFlags() const { return m_debugFlags; }
-        ObjectGuid GetDebuggerGuid() const { return m_debuggerGuid; }
-    protected:
-        mutable ObjectGuid m_debuggerGuid;
-        mutable uint32 m_debugFlags;
 
         /*********************************************************/
         /***                VISIBILITY SYSTEM                  ***/
@@ -735,7 +727,7 @@ class Unit : public SpellCaster
         // removing unknown aura stacks by diff reasons and selections
         void RemoveNotOwnSingleTargetAuras();
         void RemoveAurasAtMechanicImmunity(uint32 mechMask, uint32 exceptSpellId, bool non_positive = false);
-        void RemoveSpellsCausingAura(AuraType auraType);
+        void RemoveSpellsCausingAura(AuraType auraType, AuraRemoveMode mode = AURA_REMOVE_BY_DEFAULT);
         void RemoveSpellsCausingAura(AuraType auraType, SpellAuraHolder* except);
         void RemoveSpellsCausingAuraWithMechanic(AuraType auraType);
         void RemoveNonPassiveSpellsCausingAura(AuraType auraType);
@@ -848,15 +840,16 @@ class Unit : public SpellCaster
         void CalculateDamageAbsorbAndResist(SpellCaster* pCaster, SpellSchoolMask schoolMask, DamageEffectType damagetype, uint32 const damage, uint32* absorb, int32* resist, SpellEntry const* spellProto = nullptr, Spell* spell = nullptr);
         void CalculateAbsorbResistBlock(SpellCaster* pCaster, SpellNonMeleeDamage* damageInfo, SpellEntry const* spellProto, WeaponAttackType attType = BASE_ATTACK, Spell* spell = nullptr);
         float RollMagicResistanceMultiplierOutcomeAgainst(float resistanceChance, SpellSchoolMask schoolMask, DamageEffectType dmgType, SpellEntry const* spellProto) const;
-        bool IsSpellBlocked(SpellCaster* pCaster, Unit* pVictim, SpellEntry const* spellProto, WeaponAttackType attackType = BASE_ATTACK) const;
+        bool IsSpellPartiallyBlocked(SpellCaster* pCaster, SpellEntry const* spellProto, WeaponAttackType attackType = BASE_ATTACK) const;
+        bool RollSpellBlockChanceOutcome(SpellCaster* pCaster, WeaponAttackType attackType) const;
         bool IsSpellCrit(Unit const* pVictim, SpellEntry const* spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType = BASE_ATTACK, Spell* spell = nullptr) const final;
         bool IsEffectResist(SpellEntry const* spell, int eff) const; // SPELL_AURA_MOD_MECHANIC_RESISTANCE
         
-        void ProcDamageAndSpellFor(bool isVictim, Unit* pTarget, uint32 procFlag, uint32 procExtra, WeaponAttackType attType, SpellEntry const* procSpell, uint32 damage, ProcTriggeredList& triggeredList, std::list<SpellModifier*> const& appliedSpellModifiers, bool isSpellTriggeredByAura);
+        void ProcDamageAndSpellFor(bool isVictim, Unit* pTarget, ProcSystemArguments const& data, ProcTriggeredList& triggeredList, ProcessProcsAuraType processAurasType);
         void ProcSkillsAndReactives(bool isVictim, Unit* pTarget, uint32 procFlag, uint32 procExtra, WeaponAttackType attType);
         void HandleTriggers(Unit* pVictim, uint32 procExtra, uint32 amount, SpellEntry const* procSpell, ProcTriggeredList const& procTriggered);
 
-        bool IsTriggeredAtSpellProcEvent(Unit* pVictim, SpellAuraHolder* holder, SpellEntry const* procSpell, uint32 procFlag, uint32 procExtra, WeaponAttackType attType, bool isVictim, SpellProcEventEntry const*& spellProcEvent, bool isSpellTriggeredByAura) const;
+        SpellProcEventTriggerCheck IsTriggeredAtSpellProcEvent(Unit* pVictim, SpellAuraHolder* holder, SpellEntry const* procSpell, uint32 procFlag, uint32 procExtra, WeaponAttackType attType, bool isVictim, SpellProcEventEntry const*& spellProcEvent, bool isSpellTriggeredByAuraOrItem) const;
         // only to be used in proc handlers - basepoints is expected to be a MAX_EFFECT_INDEX sized array
         SpellAuraProcResult TriggerProccedSpell(Unit* target, int32* basepoints, uint32 triggeredSpellId, Item* castItem, Aura* triggeredByAura, uint32 cooldown, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredByParent = nullptr);
         SpellAuraProcResult TriggerProccedSpell(Unit* target, int32* basepoints, SpellEntry const* spellInfo, Item* castItem, Aura* triggeredByAura, uint32 cooldown, ObjectGuid originalCaster = ObjectGuid(), SpellEntry const* triggeredByParent = nullptr);
@@ -1107,6 +1100,7 @@ class Unit : public SpellCaster
         void AddThreat(Unit* pVictim, float threat = 0.0f, bool crit = false, SpellSchoolMask schoolMask = SPELL_SCHOOL_MASK_NONE, SpellEntry const* threatSpell = nullptr);
         float ApplyTotalThreatModifier(float threat, SpellSchoolMask schoolMask = SPELL_SCHOOL_MASK_NORMAL);
         void RemoveAttackersThreat(Unit* owner);
+        void DoResetThreat();
         void DeleteThreatList();
         ThreatManager& GetThreatManager() { return m_ThreatManager; }
         ThreatManager const& GetThreatManager() const { return m_ThreatManager; }
@@ -1140,7 +1134,7 @@ class Unit : public SpellCaster
         void SetInCombatWithAssisted(Unit* pAssisted);
         void SetInCombatWithAggressor(Unit* pAggressor, bool touchOnly = false);
         inline void SetOutOfCombatWithAggressor(Unit* pAggressor) { SetInCombatWithAggressor(pAggressor, true); }
-        void SetInCombatWithVictim(Unit* pVictim, bool touchOnly = false, uint32 combatTimer = 0);
+        void SetInCombatWithVictim(Unit* pVictim, bool touchOnly = false, uint32 combatTimer = 0, bool direct = true);
         inline void SetOutOfCombatWithVictim(Unit* pVictim) { SetInCombatWithVictim(pVictim, true); }
         void TogglePlayerPvPFlagOnAttackVictim(Unit const* pVictim, bool touchOnly = false);
         uint32 GetCombatTimer() const { return m_combatTimer; }
@@ -1172,7 +1166,7 @@ class Unit : public SpellCaster
         ObjectGuid m_possessorGuid; // Guid of unit possessing this one
     public:
         uint32 GetFactionTemplateId() const final { return GetUInt32Value(UNIT_FIELD_FACTIONTEMPLATE); }
-        void SetFactionTemplateId(uint32 faction) { SetUInt32Value(UNIT_FIELD_FACTIONTEMPLATE, faction); }
+        void SetFactionTemplateId(uint32 faction);
         void RestoreFaction();
         virtual Team GetTeam() const;
 
@@ -1259,6 +1253,7 @@ class Unit : public SpellCaster
             return GetObjectGuid();
         }
         Player* GetCharmerOrOwnerPlayerOrPlayerItself() const;
+        Player* GetCharmerOrOwnerPlayer() const;
         Unit* GetCharmerOrOwner() const { return GetCharmerGuid() ? GetCharmer() : GetOwner(); }
         Unit* GetCharmerOrOwnerOrSelf()
         {
@@ -1276,7 +1271,7 @@ class Unit : public SpellCaster
         Unit* GetCharm() const;
         void SetCharm(Unit* pet);
         void Uncharm();
-        void RemoveCharmAuras();
+        void RemoveCharmAuras(AuraRemoveMode mode = AURA_REMOVE_BY_DEFAULT);
         ObjectGuid const& GetCharmGuid() const { return GetGuidValue(UNIT_FIELD_CHARM); }
         void SetCharmGuid(ObjectGuid charm) { SetGuidValue(UNIT_FIELD_CHARM, charm); }
 
@@ -1431,6 +1426,7 @@ class Unit : public SpellCaster
         // spline for end point with targeted move gen)
         std::mutex asyncMovesplineLock;
 
+        void HandleInterruptsOnMovement(bool positionChanged);
         void OnRelocated();
         void ProcessRelocationVisibilityUpdates();
         bool m_needUpdateVisibility;
