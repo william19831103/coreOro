@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
  * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
  * Copyright (C) 2011-2016 Nostalrius <https://nostalrius.org>
@@ -456,13 +456,13 @@ void Arena::UpdatePlayerScore(Player* Source, uint32 type, uint32 value)
     UpdateArenaWorldState();
 }
 
-void Arena::HandleAreaTrigger(Player* player, uint32 trigger)
+bool Arena::HandleAreaTrigger(Player* player, uint32 trigger)
 {
     if (GetStatus() != STATUS_IN_PROGRESS)
-        return;
+        return false;
 
     if (!IsDalaranArena())
-        return;
+        return false;
 
     switch (trigger)
     {
@@ -492,6 +492,8 @@ void Arena::HandleAreaTrigger(Player* player, uint32 trigger)
         player->NearTeleportTo(1330.0f, 800.0f, 3.16f, player->GetOrientation());
         break;
     }
+
+    return true;
 }
 
 void Arena::AddPlayer(Player* player)

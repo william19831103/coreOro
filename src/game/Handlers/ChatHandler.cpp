@@ -537,7 +537,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             {
                 group = _player->GetGroup();
 
-SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_11_2
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_11_2
                 if (!group || group->isBGGroup() && !_player->InArena())
 #else
                 if (!group)

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
  * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
  * Copyright (C) 2011-2016 Nostalrius <https://nostalrius.org>
@@ -413,19 +413,19 @@ void BattleGround::Update(uint32 diff)
                 SetStartDelayTime(m_startDelayTimes[BG_STARTING_EVENT_FIRST]);
                 //first start warning - 2 or 1 minute, only if defined
                 if (m_startMessageIds[BG_STARTING_EVENT_FIRST])
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_6_1
                     SendMessageToAll(m_startMessageIds[BG_STARTING_EVENT_FIRST], CHAT_MSG_BG_SYSTEM_NEUTRAL);
+#else
+                    DoOrSimulateScriptTextForMap(m_startMessageIds[BG_STARTING_EVENT_FIRST], GetHeraldEntry(), GetBgMap());
+#endif
             }
             else
             {
-            SetStartDelayTime(m_startDelayTimes[BG_STARTING_EVENT_FIRST]);
-            //first start warning - 2 or 1 minute, only if defined
-            if (m_startMessageIds[BG_STARTING_EVENT_FIRST])
-                #if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_6_1
-                SendMessageToAll(m_startMessageIds[BG_STARTING_EVENT_FIRST], CHAT_MSG_BG_SYSTEM_NEUTRAL);
-                #else
-                DoOrSimulateScriptTextForMap(m_startMessageIds[BG_STARTING_EVENT_FIRST], GetHeraldEntry(), GetBgMap());#endif
+                SetStartDelayTime(m_startDelayTimes[BG_STARTING_EVENT_SECOND]);
+                //first start warning - 1 minute or 30 seconds, only if defined
+                if (m_startMessageIds[BG_STARTING_EVENT_FIRST])
+                    SendMessageToAll(m_startMessageIds[BG_STARTING_EVENT_SECOND], CHAT_MSG_BG_SYSTEM_NEUTRAL);
             }
-
         }
         // After 1 minute or 30 seconds, warning is signalled
         else if (GetStartDelayTime() <= m_startDelayTimes[BG_STARTING_EVENT_SECOND] && !(m_events & BG_STARTING_EVENT_2) && !m_playersReady)
@@ -720,8 +720,6 @@ void BattleGround::EndBattleGround(Team winner)
 
     if (winner == ALLIANCE)
     {
-        winmsg_id = LANG_BG_A_WINS;
-
         if (IsArena())
             PlaySoundToAll(LFG_DUNGEONREADY);
         else
@@ -731,7 +729,6 @@ void BattleGround::EndBattleGround(Team winner)
     }
     else if (winner == HORDE)
     {
-        winmsg_id = LANG_BG_H_WINS;
 
         if (IsArena())
             PlaySoundToAll(LFG_DUNGEONREADY);
@@ -1897,3 +1894,7 @@ void BattleGround::HandleCommand(Player* player, ChatHandler* handler, char* arg
                 handler->PSendSysMessage("Event (%u, %u): %u gobj / %u creatures", eventIdx, j, m_eventObjects[MAKE_PAIR32(eventIdx, j)].gameobjects.size(), m_eventObjects[MAKE_PAIR32(eventIdx, j)].creatures.size());
     }
 }
+
+
+
+

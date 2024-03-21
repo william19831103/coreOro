@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
  * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
  *
@@ -3396,7 +3396,7 @@ bool Unit::AddSpellAuraHolder(SpellAuraHolder* holder)
     {
         if (holder->IsPositive())
         {
-            uint32 positveAuras = GetVisibleAurasCount(true);
+            uint32 positveAuras = GetNegativeAurasCount();
             if (positveAuras > MAX_POSITIVE_AURAS)
             {
                 // We may have removed the aura we just applied ...
@@ -3406,7 +3406,7 @@ bool Unit::AddSpellAuraHolder(SpellAuraHolder* holder)
         }
         else
         {
-            uint32 negativeAuras = GetVisibleAurasCount(false);
+            uint32 negativeAuras = GetNegativeAurasCount();
             if (negativeAuras > sWorld.getConfig(CONFIG_UINT32_DEBUFF_LIMIT))
             {
                 // We may have removed the aura we just applied ...
@@ -3421,12 +3421,12 @@ bool Unit::AddSpellAuraHolder(SpellAuraHolder* holder)
 }
 
 // Debuff limit
-uint32 Unit::GetVisibleAurasCount(bool positive)
+uint32 Unit::GetNegativeAurasCount()
 {
     uint32 count = 0;
     for (const auto& i : m_spellAuraHolders)
     {
-        if (!i.second || !i.second->IsAffectedByVisibleSlotLimit() || positive != i.second->IsPositive())
+        if (!i.second || !i.second->IsAffectedByDebuffLimit())
             continue;
 
         ++count;

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
  * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
  * Copyright (C) 2011-2016 Nostalrius <https://nostalrius.org>
@@ -130,9 +130,11 @@ class SpellAuraHolder
         // Debuff limit
         void CalculateForBuffLimit();
         void CalculateForDebuffLimit();
+        bool IsAffectedByDebuffLimit() const { return m_debuffLimitAffected; }
         bool IsAffectedByVisibleSlotLimit() const { return m_visibleSlotLimitAffected; }
         void SetAffectedByVisibleSlotLimit(bool isAffectedByDebuffLimit);
         bool IsMoreImportantVisualAuraThan(SpellAuraHolder* other) const;
+        bool m_debuffLimitAffected;
         bool m_visibleSlotLimitAffected;
         uint32 m_visibleSlotLimitScore; // higher means more important
 

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
  * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
  * Copyright (C) 2011-2016 Nostalrius <https://nostalrius.org>
@@ -31,6 +31,7 @@
 #include "Util.h"
 #include "Pet.h"
 #include "Group.h"
+#include "BattleGround.h"
 
 void WorldSession::HandlePetAction(WorldPacket& recv_data)
 {

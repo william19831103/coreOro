@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
  * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
  * Copyright (C) 2011-2016 Nostalrius <https://nostalrius.org>
@@ -150,7 +150,7 @@ class Arena : public BattleGround
         void StartingEventCloseDoors();
         void StartingEventOpenDoors();
         void UpdatePlayerScore(Player* Source, uint32 type, uint32 value);
-        void HandleAreaTrigger(Player* player, uint32 trigger);
+        bool HandleAreaTrigger(Player* player, uint32 trigger);
 
         void RemovePlayer(Player * player);
         void HandleKillPlayer(Player *player, Player *killer);
