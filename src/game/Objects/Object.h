@@ -723,6 +723,8 @@ class WorldObject : public Object
             // angle to face `obj` to `this` using distance includes size of `obj`
             GetNearPoint(obj, x, y, z, obj->GetObjectBoundingRadius(), distance2d, GetAngle(obj));
         }
+        virtual void GetLosCheckPosition(float& x, float& y, float& z) const;
+
         virtual float GetObjectBoundingRadius() const { return DEFAULT_WORLD_OBJECT_SIZE; }
         virtual float GetCombatReach() const { return 0.f; }
 
@@ -750,9 +752,7 @@ class WorldObject : public Object
 
         InstanceData* GetInstanceData() const;
 
-        char const* GetName() const { return m_name.c_str(); }
-        void SetName(std::string const& newname) { m_name=newname; }
-
+        virtual char const* GetName() const = 0;
         virtual char const* GetNameForLocaleIdx(int32 /*locale_idx*/) const { return GetName(); }
         virtual uint8 GetGender() const { return 0; } // used in chat builder
 
@@ -869,7 +869,9 @@ class WorldObject : public Object
 
         virtual void SendMessageToSetInRange(WorldPacket* data, float dist, bool self) const;
         void SendMessageToSetExcept(WorldPacket* data, Player const* skipped_receiver) const;
-        void DirectSendPublicValueUpdate(uint32 index);
+        void DirectSendPublicValueUpdate(uint32 index, uint32 count = 1);
+        void DirectSendPublicValueUpdate(UpdateMask& updateMask);
+        void DirectSendPublicValueUpdate(std::initializer_list<uint32> indexes);
 
         void PlayDistanceSound(uint32 sound_id, Player const* target = nullptr) const;
         void PlayDirectSound(uint32 sound_id, Player const* target = nullptr) const;
@@ -908,6 +910,7 @@ class WorldObject : public Object
         virtual ReputationRank GetReactionTo(WorldObject const* target) const;
         ReputationRank static GetFactionReactionTo(FactionTemplateEntry const* factionTemplateEntry, WorldObject const* target);
         bool IsValidAttackTarget(Unit const* target, bool checkAlive = true) const;
+        bool IsValidHelpfulTarget(Unit const* target, bool checkAlive = true) const;
 
         virtual void SaveRespawnTime() {}
         void AddObjectToRemoveList();
@@ -998,7 +1001,6 @@ class WorldObject : public Object
     protected:
         explicit WorldObject();
 
-        std::string m_name;
         ZoneScript* m_zoneScript;
         bool m_isActiveObject;
         // Extra visibility distance for this unit, only used if it is an active object.

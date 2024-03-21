@@ -86,8 +86,6 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recv_data)
         return;
     }
 
-    if (GetPlayer()->GetMapId() > 1 && GetPlayer()->GetInstanceId() && player->GetInstanceId() && GetPlayer()->GetInstanceId() != player->GetInstanceId() && GetPlayer()->GetMapId() == player->GetMapId())
-        return;
     // Just ignore us
     if (player->GetSocial()->HasIgnore(GetPlayer()->GetObjectGuid()))
     {
@@ -312,13 +310,24 @@ void WorldSession::HandleGroupUninviteOpcode(WorldPacket& recv_data)
 void WorldSession::HandleGroupSetLeaderOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_11_2
     recv_data >> guid;
+#else
+    std::string name;
+    recv_data >> name;
+#endif
 
     Group* group = GetPlayer()->GetGroup();
     if (!group)
         return;
 
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_11_2
     Player* player = sObjectMgr.GetPlayer(guid);
+#else
+    Player* player = sObjectMgr.GetPlayer(name.c_str());
+    if (player)
+        guid = player->GetObjectGuid();
+#endif
 
     /** error handling **/
     if (!player || !group->IsLeader(GetPlayer()->GetObjectGuid()) || player->GetGroup() != group)
@@ -393,6 +402,14 @@ void WorldSession::HandleLootRoll(WorldPacket& recv_data)
     if (rollType >= MAX_ROLL_FROM_CLIENT)
         return;
 
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_7_1
+    if (GetPlayer()->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_NO_PLAY_TIME))
+    {
+        SendPlayTimeWarning(PTF_UNHEALTHY_TIME, 0);
+        rollType = ROLL_PASS;
+    }
+#endif
+
     // everything is fine, do it, if false then some cheating problem found (result not used in pre-3.0)
     group->CountRollVote(GetPlayer(), lootedTarget, itemSlot, RollVote(rollType));
 }
@@ -466,7 +483,7 @@ void WorldSession::HandleRaidTargetUpdateOpcode(WorldPacket& recv_data)
     else                                                    // target icon update
     {
         if (!group->IsLeader(GetPlayer()->GetObjectGuid()) &&
-                !group->IsAssistant(GetPlayer()->GetObjectGuid()))
+            !group->IsAssistant(GetPlayer()->GetObjectGuid()))
             return;
 
         ObjectGuid guid;
@@ -570,7 +587,12 @@ void WorldSession::HandleGroupAssistantLeaderOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
     uint8 flag;
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_11_2
     recv_data >> guid;
+#else
+    std::string name;
+    recv_data >> name;
+#endif
     recv_data >> flag;
 
     Group* group = GetPlayer()->GetGroup();
@@ -581,6 +603,13 @@ void WorldSession::HandleGroupAssistantLeaderOpcode(WorldPacket& recv_data)
     if (!group->IsLeader(GetPlayer()->GetObjectGuid()))
         return;
     /********************/
+
+#if SUPPORTED_CLIENT_BUILD <= CLIENT_BUILD_1_11_2
+    if (Player* player = sObjectMgr.GetPlayer(name.c_str()))
+        guid = player->GetObjectGuid();
+    else
+        return;
+#endif
 
     // everything is fine, do it
     group->SetAssistant(guid, (flag != 0));
@@ -662,7 +691,7 @@ void WorldSession::BuildPartyMemberStatsPacket(Player* player, WorldPacket* data
         *data << uint16(player->GetCachedZoneId());
 
     if (mask & GROUP_UPDATE_FLAG_POSITION)
-        *data << uint16(player->GetPositionX()) << uint16(player->GetPositionY());
+        *data << int16(player->GetPositionX()) << int16(player->GetPositionY());
 
     if (mask & GROUP_UPDATE_FLAG_AURAS)
     {

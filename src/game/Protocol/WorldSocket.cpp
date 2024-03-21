@@ -19,9 +19,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
 #include "Auth/AuthCrypt.h"
-
 #include "World.h"
 #include "AccountMgr.h"
 #include "SharedDefines.h"
@@ -29,9 +27,9 @@
 #include "WorldSocket.h"
 #include "WorldSocketMgr.h"
 #include "AddonHandler.h"
-
 #include "Opcodes.h"
 #include "MangosSocketImpl.h"
+#include "ace/OS_NS_netdb.h"
 
 template class MangosSocket<WorldSession, WorldSocket, AuthCrypt>;
 
@@ -75,11 +73,9 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 
                 if (m_Session != nullptr)
                 {
-                    // OK ,give the packet to WorldSession
-                    aptr.release();
                     // WARNINIG here we call it with locks held.
                     // Its possible to cause deadlock if QueuePacket calls back
-                    m_Session->QueuePacket(new_pct);
+                    m_Session->QueuePacket(std::move(aptr));
                     return 0;
                 }
                 else
@@ -114,21 +110,45 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
     ACE_NOTREACHED(return 0);
 }
 
+static std::set<std::string> GetServerAddresses()
+{
+    std::set<std::string> addresses;
+    char hostName[MAXHOSTNAMELEN] = {};
+
+    if (ACE_OS::hostname(hostName, MAXHOSTNAMELEN) != -1)
+    {
+        if (hostent* hp = ACE_OS::gethostbyname(hostName))
+        {
+            for (int i = 0; hp->h_addr_list[i] != 0; ++i)
+            {
+                in_addr addr;
+                memcpy(&addr, hp->h_addr_list[i], sizeof(in_addr));
+                addresses.insert(ACE_OS::inet_ntoa(addr));
+            }
+        }
+    }
+
+    addresses.insert("127.0.0.1");
+
+    return addresses;
+}
+
 int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 {
     // NOTE: ATM the socket is singlethread, have this in mind ...
     uint8 digest[20];
     uint32 clientSeed;
     uint32 serverId;
-    uint32 BuiltNumberClient;
+    uint32 clientBuild;
     uint32 id, security;
     LocaleConstant locale;
     std::string account, os, platform;
-    BigNumber v, s, g, N, K;
-    WorldPacket packet, SendAddonPacked;
+    BigNumber K;
+    WorldPacket packet, addonPacket;
+    static std::set<std::string> const serverAddressList = GetServerAddresses();
 
     // Read the content of the packet
-    recvPacket >> BuiltNumberClient;
+    recvPacket >> clientBuild;
     recvPacket >> serverId;
     recvPacket >> account;
 
@@ -136,13 +156,13 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     recvPacket.read(digest, 20);
 
     sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "WorldSocket::HandleAuthSession: client %u, serverId %u, account %s, clientseed %u",
-              BuiltNumberClient,
+              clientBuild,
               serverId,
               account.c_str(),
               clientSeed);
 
     // Check the version of client trying to connect
-    if (!IsAcceptableClientBuild(BuiltNumberClient))
+    if (!IsAcceptableClientBuild(clientBuild))
     {
         packet.Initialize(SMSG_AUTH_RESPONSE, 1);
         packet << uint8(AUTH_VERSION_MISMATCH);
@@ -158,9 +178,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     LoginDatabase.escape_string(safe_account);
     // No SQL injection, username escaped.
 
-    QueryResult* result = LoginDatabase.PQuery("SELECT a.`id`, aa.`gmLevel`, a.`sessionkey`, a.`last_ip`, a.`locked`, a.`v`, a.`s`, a.`mutetime`, a.`locale`, a.`os`, a.`platform`, a.`flags`, "
+    std::unique_ptr<QueryResult> result(LoginDatabase.PQuery("SELECT a.`id`, aa.`gmLevel`, a.`sessionkey`, a.`last_ip`, a.`v`, a.`s`, a.`mutetime`, a.`locale`, a.`os`, a.`platform`, a.`flags`, "
         "ab.`unbandate` > UNIX_TIMESTAMP() OR ab.`unbandate` = ab.`bandate` FROM `account` a LEFT JOIN `account_access` aa ON a.`id` = aa.`id` AND aa.`RealmID` IN (-1, %u) "
-        "LEFT JOIN `account_banned` ab ON a.`id` = ab.`id` AND ab.`active` = 1 WHERE a.`username` = '%s' ORDER BY aa.`RealmID` DESC LIMIT 1", realmID, safe_account.c_str());
+        "LEFT JOIN `account_banned` ab ON a.`id` = ab.`id` AND ab.`active` = 1 WHERE a.`username` = '%s' && DATEDIFF(NOW(), a.`last_login`) < 1 ORDER BY aa.`RealmID` DESC LIMIT 1", realmID, safe_account.c_str()));
 
     // Stop if the account is not found
     if (!result)
@@ -176,61 +196,38 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     Field* fields = result->Fetch();
 
-    N.SetHexStr("894B645E89E1535BBDAD5B8B290650530801B18EBFBF5E8FAB3C82872A3E9BB7");
-    g.SetDword(7);
-
-    v.SetHexStr(fields[5].GetString());
-    s.SetHexStr(fields[6].GetString());
-
-    char const* sStr = s.AsHexStr();                        //Must be freed by OPENSSL_free()
-    char const* vStr = v.AsHexStr();                        //Must be freed by OPENSSL_free()
-
-    sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "WorldSocket::HandleAuthSession: (s,v) check s: %s v: %s",
-              sStr,
-              vStr);
-
-    OPENSSL_free((void*) sStr);
-    OPENSSL_free((void*) vStr);
-
-    ///- Re-check ip locking (same check as in realmd).
-    if (fields[4].GetUInt8() == 1)  // if ip is locked
+    // Prevent connecting directly to mangosd by checking
+    // that same ip connected to realmd previously.
+    if (strcmp(fields[3].GetString(), GetRemoteAddress().c_str()) &&
+        serverAddressList.find(GetRemoteAddress()) == serverAddressList.end())
     {
-        if (strcmp(fields[3].GetString(), GetRemoteAddress().c_str()))
-        {
-            packet.Initialize(SMSG_AUTH_RESPONSE, 1);
-            packet << uint8(AUTH_FAILED);
-            SendPacket(packet);
+        packet.Initialize(SMSG_AUTH_RESPONSE, 1);
+        packet << uint8(AUTH_FAILED);
+        SendPacket(packet);
 
-            delete result;
-            sLog.Out(LOG_BASIC, LOG_LVL_BASIC, "WorldSocket::HandleAuthSession: Sent Auth Response (Account IP differs).");
-            return -1;
-        }
+        sLog.Out(LOG_BASIC, LOG_LVL_BASIC, "WorldSocket::HandleAuthSession: Sent Auth Response (Account IP differs).");
+        return -1;
     }
 
     id = fields[0].GetUInt32();
-    security = sAccountMgr.GetSecurity(id); //fields[1].GetUInt16 ();
-    if (security > SEC_ADMINISTRATOR)                       // prevent invalid security settings in DB
+    security = sAccountMgr.GetSecurity(id);
+    if (security > SEC_ADMINISTRATOR) // prevent invalid security settings in DB
         security = SEC_ADMINISTRATOR;
 
     K.SetHexStr(fields[2].GetString());
 
     if (K.AsByteArray().empty())
-    {
-        delete result;
         return -1;
-    }
 
-    time_t mutetime = time_t (fields[7].GetUInt64());
+    time_t mutetime = time_t (fields[6].GetUInt64());
 
-    locale = LocaleConstant(fields[8].GetUInt8());
+    locale = LocaleConstant(fields[7].GetUInt8());
     if (locale >= MAX_LOCALE)
         locale = LOCALE_enUS;
-    os = fields[9].GetCppString();
-    platform = fields[10].GetCppString();
-    uint32 accFlags = fields[11].GetUInt32();
-    bool isBanned = fields[12].GetBool();
-    delete result;
-
+    os = fields[8].GetCppString();
+    platform = fields[9].GetCppString();
+    uint32 accFlags = fields[10].GetUInt32();
+    bool isBanned = fields[11].GetBool();
     
     if (isBanned || sAccountMgr.IsIPBanned(GetRemoteAddress()))
     {
@@ -247,9 +244,8 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     if (allowedAccountType > SEC_PLAYER && AccountTypes(security) < allowedAccountType)
     {
-        WorldPacket Packet(SMSG_AUTH_RESPONSE, 1);
-        Packet << uint8(AUTH_UNAVAILABLE);
-
+        packet.Initialize(SMSG_AUTH_RESPONSE, 1);
+        packet << uint8(AUTH_UNAVAILABLE);
         SendPacket(packet);
 
         sLog.Out(LOG_BASIC, LOG_LVL_BASIC, "WorldSocket::HandleAuthSession: User tries to login but his security level is not enough");
@@ -273,7 +269,6 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     {
         packet.Initialize(SMSG_AUTH_RESPONSE, 1);
         packet << uint8(AUTH_FAILED);
-
         SendPacket(packet);
 
         sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "WorldSocket::HandleAuthSession: Sent Auth Response (authentification failed).");
@@ -322,22 +317,19 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     m_Crypt.Init();
 
     m_Session->SetUsername(account);
-    m_Session->SetGameBuild(BuiltNumberClient);
+    m_Session->SetGameBuild(clientBuild);
     m_Session->SetAccountFlags(accFlags);
     m_Session->SetOS(clientOs);
     m_Session->SetPlatform(clientPlatform);
+    m_Session->SetSessionKey(K);
     m_Session->LoadGlobalAccountData();
     m_Session->LoadTutorialsData();
-    m_Session->InitWarden(&K);
-
-    // In case needed sometime the second arg is in microseconds 1 000 000 = 1 sec
-    ACE_OS::sleep(ACE_Time_Value(0, 10000));
 
     sWorld.AddSession(m_Session);
 
     // Create and send the Addon packet
-    if (sAddOnHandler.BuildAddonPacket(&recvPacket, &SendAddonPacked))
-        SendPacket(SendAddonPacked);
+    if (sAddOnHandler.BuildAddonPacket(&recvPacket, &addonPacket))
+        SendPacket(addonPacket);
 
     return 0;
 }

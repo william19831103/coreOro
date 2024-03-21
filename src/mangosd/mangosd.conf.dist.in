@@ -517,6 +517,11 @@ DebuffLimit = 0
 #        Default: "Anticheat.log"
 #                 "" - Empty name disable creating log file
 #
+#    LogFile.Scripts
+#        Log file for script errors and debug info
+#        Default: "Scripts.log"
+#                 "" - Empty name disable creating log file
+#
 #    LogFile.Chat
 #        Log file for player chat.
 #        Default: "Chat.log"
@@ -655,6 +660,7 @@ LogFilter_Honor = 1
 LogFile.Timestamp = 0
 LogFile.Basic = "Server.log"
 LogFile.Anticheat = "Anticheat.log"
+LogFile.Scripts = "Scripts.log"
 LogFile.Chat = "Chat.log"
 LogFile.Bg = "Bg.log"
 LogFile.Char = "Char.log"
@@ -810,6 +816,13 @@ PerformanceLog.SlowPacketBroadcast      = 0
 #        Default: 10 (client limitation)
 #                The number must be between 1 and 10
 #
+#    LimitPlayTime
+#        Keep track of how long player accounts have been online, and limit loot and experience after that.
+#        After 3 hours looted gold and experience gains are cut in half. After 5 hours they are prevented.
+#        This feature was only used on Chinese realms.
+#        Default: 0 (Disabled)
+#                 1 (Enabled)
+#
 #    SkipCinematics
 #        Disable in-game intro cinematic on first login of character (allows to prevent buggy intro when using custom start location)
 #        Default: 0 - show intro for each new character
@@ -837,6 +850,11 @@ PerformanceLog.SlowPacketBroadcast      = 0
 #    MinHonorKills
 #        Min kills that players must obtain to enter in weekly honor calculation
 #        Default: 0 (auto select based on patch)
+#
+#    RpDecay
+#        Determines the percentage of rank points (RP) decay per week
+#        If set to 0 there will be no decay
+#        Default: 0.2 (20%)
 #
 #    MaintenanceDay
 #        The day of the week on which server maintenance is performed ( currently used for Honor distribution )
@@ -900,6 +918,10 @@ PerformanceLog.SlowPacketBroadcast      = 0
 #        Unload the instance map from memory after some time if no players are inside.
 #        Default: 1800000 (miliseconds, i.e 30 minutes)
 #                 0 (instance maps are kept in memory until they are reset)
+#
+#    Instance.PerHourLimit
+#        How many instances players can enter per hour per account.
+#        Default: 5
 #
 #    Item.InstantSaveQuality
 #        Save character inventory instantly on receiving item of this quality or higher.
@@ -985,6 +1007,11 @@ PerformanceLog.SlowPacketBroadcast      = 0
 #        More mails increase server load but speedup mass mail process. Normal tick length: 50 msecs, so 20 ticks in sec and 200 mails in sec by default.
 #        Default: 10
 #
+#    Mail.ReturnedMail.PerTick
+#        Max amount of mail deleted or returned each tick from mails that has expired.
+#        More mails increase server load but can prevent a bottleneck where expired mails aren't handled until server restart. Normal tick length: 30 minutes.
+#        Default: 5
+#
 #    PetUnsummonAtMount
 #        Permanent pet will be unsummoned at player mount
 #        Default: 0 - not unsummon
@@ -1053,12 +1080,14 @@ WorldAvailable = 1
 CharactersCreatingDisabled = 0
 CharactersPerAccount = 50
 CharactersPerRealm = 10
+LimitPlayTime = 0
 SkipCinematics = 0
 ShowHealthValues = 0
 MaxPlayerLevel = 60
 StartPlayerLevel = 1
 StartPlayerMoney = 0
 MinHonorKills = 0
+RpDecay = 0.2
 MaintenanceDay = 3
 InstantLogout = 1
 ForceLogoutDelay = 0
@@ -1072,6 +1101,7 @@ Instance.IgnoreLevel = 0
 Instance.IgnoreRaid = 0
 Instance.ResetTimeHour = 4
 Instance.UnloadDelay = 1800000
+Instance.PerHourLimit = 5
 Item.InstantSaveQuality = 6
 Item.PreventDataMining = 1
 Quests.LowLevelHideDiff = 4
@@ -1090,6 +1120,7 @@ MaxGroupXPDistance = 74
 MailDeliveryDelay = 3600
 Mails.COD.ForceTag.MaxLevel = 0
 MassMailer.SendPerTick = 10
+Mail.ReturnedMail.PerTick = 5
 PetUnsummonAtMount = 0
 PetDefaultLoyalty = 1
 PlayerCommands = 1
@@ -1998,6 +2029,29 @@ Warden.ModuleDir             = "warden_modules"
 #        Description: Action to take upon failing this check.
 #        Default:     3 - Log, Report to GM
 #
+#    Anticheat.Botting.Enable
+#        Description: Check for bot-like movement.
+#        Default:     1 - (Enabled)
+#                     0 - (Disabled)
+#
+#    Anticheat.Botting.MinPeriod
+#        Description: For how long client must exibit bot-like movement to trigger penalty.
+#        Default:     300000 (5 minutes)
+#
+#    Anticheat.Botting.MinPackets
+#        Description: Minimum number of movement packets that need to have been sent.
+#        Default:     160
+#
+#    Anticheat.Botting.MinTurnsMouse
+#    Anticheat.Botting.MinTurnsKeyboard
+#    Anticheat.Botting.MinTurnsAbnormal
+#        Description: Minimum number of turns that need to happen in the given period.
+#        Default:     20, 80, 5
+#
+#    Anticheat.Botting.Penalty
+#        Description: Action to take upon failing this check.
+#        Default:     3 - Log, Report to GM
+#
 ###################################################################################################
 
 Anticheat.Enable = 1
@@ -2113,6 +2167,13 @@ Anticheat.ExploreHighLevelArea.Penalty = 11
 Anticheat.ForbiddenArea.Enable = 1
 Anticheat.ForbiddenArea.Threshold = 1
 Anticheat.ForbiddenArea.Penalty = 3
+Anticheat.Botting.Enable = 1
+Anticheat.Botting.MinPeriod = 300000
+Anticheat.Botting.MinPackets = 160
+Anticheat.Botting.MinTurnsMouse = 20
+Anticheat.Botting.MinTurnsKeyboard = 80
+Anticheat.Botting.MinTurnsAbnormal = 5
+Anticheat.Botting.Penalty = 3
 
 # Time to wait for movement change ack
 Movement.PendingAckResponseTime = 4000
@@ -2867,6 +2928,11 @@ AHBot.itemcount = 50
 #                 0 (normal starting items)
 #                 2 (premade gear template)
 #
+#    BattleBot.AutoJoin
+#        Adds enough battlebots for battleground to start when a player queues.
+#        Default: 0 - off
+#                 1 - on
+#
 ###################################################################################################################
 RandomBot.Enable = 0
 RandomBot.MinBots = 0
@@ -2884,6 +2950,7 @@ PartyBot.AutoEquip = 1
 PartyBot.RandomGearLevelDifference = 10
 
 BattleBot.AutoEquip = 1
+BattleBot.AutoJoin = 0
 
 ###################################################################################################################
 #    Database-based chat

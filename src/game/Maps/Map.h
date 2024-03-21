@@ -442,6 +442,7 @@ class Map : public GridRefManager<NGridType>
         void markCell(uint32 pCellId) { marked_cells.set(pCellId); }
 
         bool HavePlayers() const { return !m_mapRefManager.isEmpty(); }
+        bool HaveRealPlayers() const; // no bots
         uint32 GetPlayersCountExceptGMs() const;
         bool ActiveObjectsNearGrid(uint32 x,uint32 y) const;
 
@@ -480,7 +481,7 @@ class Map : public GridRefManager<NGridType>
         // Adds the provided command to the queue. Will be handled by ScriptsProcess.
         void ScriptCommandStart(ScriptInfo const& script, uint32 delay, ObjectGuid sourceGuid, ObjectGuid targetGuid);
         // Immediately executes the provided command.
-        void ScriptCommandStartDirect(ScriptInfo const& script, WorldObject* source, WorldObject* target);
+        bool ScriptCommandStartDirect(ScriptInfo const& script, WorldObject* source, WorldObject* target);
         // Removes all parts of script from the queue.
         void TerminateScript(ScriptAction const& step);
 
@@ -505,7 +506,7 @@ class Map : public GridRefManager<NGridType>
         Creature* GetAnyTypeCreature(ObjectGuid guid);      // normal creature or pet
         GenericTransport* GetTransport(ObjectGuid guid);
         ElevatorTransport* GetElevatorTransport(ObjectGuid);
-        DynamicObject* GetDynamicObject(ObjectGuid guid);
+        DynamicObject* GetDynamicObject(ObjectGuid guid) { return GetObject<DynamicObject>(guid); }
         Corpse* GetCorpse(ObjectGuid guid);                   // !!! find corpse can be not in world
         Unit* GetUnit(ObjectGuid guid);                       // only use if sure that need objects at current map, specially for player case
         WorldObject* GetWorldObject(ObjectGuid guid);         // only use if sure that need objects at current map, specially for player case
@@ -555,7 +556,9 @@ class Map : public GridRefManager<NGridType>
         bool GetWalkHitPosition(GenericTransport* t, float srcX, float srcY, float srcZ, float& destX, float& destY, float& destZ, 
             uint32 moveAllowedFlags = 0xF /*NAV_GROUND | NAV_WATER | NAV_MAGMA | NAV_SLIME*/, float zSearchDist = 20.0f, bool locatedOnSteepSlope = true) const;
         bool GetWalkRandomPosition(GenericTransport* t, float &x, float &y, float &z, float maxRadius, uint32 moveAllowedFlags = 0xF) const;
+        bool GetSwimRandomPosition(float& x, float& y, float& z, float radius, GridMapLiquidData& liquid_status, bool randomRange = true) const;
         VMAP::ModelInstance* FindCollisionModel(float x1, float y1, float z1, float x2, float y2, float z2);
+        GameObjectModel const* FindDynamicObjectCollisionModel(float x1, float y1, float z1, float x2, float y2, float z2);
 
         void Balance() { _dynamicTree.balance(); }
         void RemoveGameObjectModel(const GameObjectModel& model);
@@ -625,9 +628,6 @@ class Map : public GridRefManager<NGridType>
             return i_grids[x][y];
         }
 
-        bool isGridObjectDataLoaded(uint32 x, uint32 y) const { return getNGrid(x,y)->isGridObjectDataLoaded(); }
-        void setGridObjectDataLoaded(bool pLoaded, uint32 x, uint32 y) { getNGrid(x,y)->setGridObjectDataLoaded(pLoaded); }
-
         void setNGrid(NGridType* grid, uint32 x, uint32 y);
         void ScriptsProcess();
         bool FindScriptInitialTargets(WorldObject*& source, WorldObject*& target, ScriptAction const& step);
@@ -639,15 +639,15 @@ class Map : public GridRefManager<NGridType>
         bool                    _processingSendObjUpdates = false;
         uint32                  _objUpdatesThreads = 0;
         mutable std::mutex      i_objectsToClientUpdate_lock;
-        std::set<Object *>      i_objectsToClientUpdate;
+        std::unordered_set<Object *> i_objectsToClientUpdate;
 
         bool                    _processingUnitsRelocation = false;
         uint32                  _unitRelocationThreads = 0;
         mutable std::mutex      i_unitsRelocated_lock;
-        std::set<Unit* >        i_unitsRelocated;
+        std::unordered_set<Unit* > i_unitsRelocated;
 
         mutable std::mutex      unitsMvtUpdate_lock;
-        std::set<Unit*>         unitsMvtUpdate;
+        std::unordered_set<Unit*> unitsMvtUpdate;
 
         mutable MapMutexType    _corpseRemovalLock;
         typedef std::list<std::pair<Corpse*, ObjectGuid>> CorpseRemoveList;
@@ -853,6 +853,8 @@ class Map : public GridRefManager<NGridType>
         bool ScriptCommand_SetCommandState(ScriptInfo const& script, WorldObject* source, WorldObject* target);
         bool ScriptCommand_PlayCustomAnim(ScriptInfo const& script, WorldObject* source, WorldObject* target);
         bool ScriptCommand_StartScriptOnGroup(ScriptInfo const& script, WorldObject* source, WorldObject* target);
+        bool ScriptCommand_LoadCreatureSpawn(ScriptInfo const& script, WorldObject* source, WorldObject* target);
+        bool ScriptCommand_StartScriptOnZone(ScriptInfo const& script, WorldObject* source, WorldObject* target);
 
         // Add any new script command functions to the array.
         ScriptCommandFunction const m_ScriptCommands[SCRIPT_COMMAND_MAX] =
@@ -948,6 +950,8 @@ class Map : public GridRefManager<NGridType>
             &Map::ScriptCommand_SetCommandState,        // 88
             &Map::ScriptCommand_PlayCustomAnim,         // 89
             &Map::ScriptCommand_StartScriptOnGroup,     // 90
+            &Map::ScriptCommand_LoadCreatureSpawn,      // 91
+            &Map::ScriptCommand_StartScriptOnZone,      // 92
         };
 
     public:
@@ -987,6 +991,7 @@ class DungeonMap : public Map
 
         // can't be nullptr for loaded map
         DungeonPersistentState* GetPersistanceState() const;
+        void BindPlayerOrGroupOnEnter(Player* player);
 
         void InitVisibilityDistance() override;
         // Activated at raid expiration. No one can enter.
@@ -1030,10 +1035,11 @@ void Map::Visit(Cell const& cell, TypeContainerVisitor<T, CONTAINER>& visitor)
     uint32 const cell_x = cell.CellX();
     uint32 const cell_y = cell.CellY();
 
-    if (!cell.NoCreate() || loaded(GridPair(x,y)))
-    {
+    if (!cell.NoCreate())
         EnsureGridLoaded(cell);
-        getNGrid(x, y)->Visit(cell_x, cell_y, visitor);
-    }
+
+    NGridType* grid = getNGrid(x, y);
+    if (grid && grid->isGridObjectDataLoaded())
+        grid->Visit(cell_x, cell_y, visitor);
 }
 #endif

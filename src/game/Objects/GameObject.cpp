@@ -105,7 +105,7 @@ GameObject::~GameObject()
     delete i_AI;
     delete m_model;
 
-    MANGOS_ASSERT(m_dynObjGUIDs.empty());
+    MANGOS_ASSERT(m_spellDynObjects.empty());
 }
 
 GameObject* GameObject::CreateGameObject(uint32 entry)
@@ -118,7 +118,7 @@ GameObject* GameObject::CreateGameObject(uint32 entry)
 
 void GameObject::AddToWorld()
 {
-    ///- Register the gameobject for guid lookup
+    // Register the gameobject for guid lookup
     if (!IsInWorld())
     {
         GetMap()->InsertObject<GameObject>(GetObjectGuid(), this);
@@ -148,7 +148,7 @@ void GameObject::AIM_Initialize()
 
 void GameObject::RemoveFromWorld()
 {
-    ///- Remove the gameobject from the accessor
+    // Remove the gameobject from the accessor
     if (IsInWorld())
     {
         if (AI())
@@ -248,8 +248,6 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float
         SetFlag(GAMEOBJECT_FLAGS, (GO_FLAG_TRANSPORT | GO_FLAG_NODESPAWN));
     }
 
-    SetName(goinfo->name);
-
     if (GetGOInfo()->IsLargeGameObject())
     {
         SetVisibilityModifier(VISIBILITY_DISTANCE_LARGE);
@@ -336,7 +334,7 @@ void GameObject::Update(uint32 update_diff, uint32 /*p_time*/)
 
     UpdatePendingProcs(update_diff);
 
-    ///- UpdateAI
+    // UpdateAI
     if (i_AI)
         i_AI->UpdateAI(update_diff);
 
@@ -731,7 +729,7 @@ void GameObject::Refresh()
 
 void GameObject::AddUniqueUse(Player* player)
 {
-    std::unique_lock<std::mutex> guard(m_UniqueUsers_lock);
+    std::unique_lock<std::shared_timed_mutex> guard(m_UniqueUsers_lock);
 
     AddUse();
 
@@ -766,7 +764,7 @@ void GameObject::AddUniqueUse(Player* player)
 
 void GameObject::RemoveUniqueUse(Player* player)
 {
-    const std::lock_guard<std::mutex> guard(m_UniqueUsers_lock);
+    const std::lock_guard<std::shared_timed_mutex> guard(m_UniqueUsers_lock);
 
     auto itr = m_UniqueUsers.find(player->GetObjectGuid());
     if (itr == m_UniqueUsers.end())
@@ -795,7 +793,7 @@ void GameObject::RemoveUniqueUse(Player* player)
 
 void GameObject::FinishRitual()
 {
-    std::unique_lock<std::mutex> guard(m_UniqueUsers_lock);
+    std::unique_lock<std::shared_timed_mutex> guard(m_UniqueUsers_lock);
 
     if (GameObjectInfo const* info = GetGOInfo())
     {
@@ -825,13 +823,13 @@ void GameObject::FinishRitual()
 
 bool GameObject::HasUniqueUser(Player* player)
 {
-    const std::lock_guard<std::mutex> guard(m_UniqueUsers_lock);
+    const std::shared_lock<std::shared_timed_mutex> guard(m_UniqueUsers_lock);
     return m_UniqueUsers.find(player->GetObjectGuid()) != m_UniqueUsers.end();
 }
 
 uint32 GameObject::GetUniqueUseCount()
 {
-    const std::lock_guard<std::mutex> guard(m_UniqueUsers_lock);
+    const std::shared_lock<std::shared_timed_mutex> guard(m_UniqueUsers_lock);
     return m_UniqueUsers.size();
 }
 
@@ -1050,11 +1048,6 @@ void GameObject::DeleteFromDB() const
     WorldDatabase.PExecuteLog("DELETE FROM gameobject_battleground WHERE guid = '%u'", GetGUIDLow());
 }
 
-GameObjectInfo const* GameObject::GetGOInfo() const
-{
-    return m_goInfo;
-}
-
 /*********************************************************/
 /***                    QUEST SYSTEM                   ***/
 /*********************************************************/
@@ -1164,9 +1157,6 @@ bool GameObject::IsVisibleForInState(WorldObject const* pDetector, WorldObject c
                 if (!(pDetectorUnit->m_detectInvisibilityMask & (1 << 3))) // Detection des pieges
                     return false;
             }
-            // Smuggled Mana Cell required 10 invisibility type detection/state
-            if (GetEntry() == 187039 && ((pDetectorUnit->m_detectInvisibilityMask | pDetectorUnit->m_invisibilityMask) & (1 << 10)) == 0)
-                return false;
         }
         
     }
@@ -1485,7 +1475,7 @@ void GameObject::Use(Unit* user)
             if (user->GetTypeId() != TYPEID_PLAYER)
                 return;
 
-            if (GetFactionTemplateId())
+            if (GetFactionTemplateId() && !GetGOInfo()->chest.minSuccessOpens && !GetGOInfo()->chest.maxSuccessOpens)
             {
                 std::list<Unit*> targets;
                 MaNGOS::AnyFriendlyUnitInObjectRangeCheck check(this, 10.0f);
@@ -2065,7 +2055,7 @@ char const* GameObject::GetNameForLocaleIdx(int32 loc_idx) const
         }
     }
 
-    return GetName();
+    return GameObject::GetName();
 }
 
 void GameObject::UpdateRotationFields(float rotation2 /*=0.0f*/, float rotation3 /*=0.0f*/)
@@ -2402,6 +2392,36 @@ void GameObject::UpdateModelPosition()
         GetMap()->RemoveGameObjectModel(*m_model);
         m_model->Relocate(*this);
         GetMap()->InsertGameObjectModel(*m_model);
+    }
+}
+
+void GameObject::GetLosCheckPosition(float& x, float& y, float& z) const
+{
+    if (GameObjectDisplayInfoAddon const* displayInfo = sGameObjectDisplayInfoAddonStorage.LookupEntry<GameObjectDisplayInfoAddon>(GetDisplayId()))
+    {
+        float scale = GetObjectScale();
+
+        float minX = displayInfo->min_x * scale;
+        float minY = displayInfo->min_y * scale;
+        float minZ = displayInfo->min_z * scale;
+        float maxX = displayInfo->max_x * scale;
+        float maxY = displayInfo->max_y * scale;
+        float maxZ = displayInfo->max_z * scale;
+
+        QuaternionData worldRotation = GetLocalRotation();
+        G3D::Quat worldRotationQuat(worldRotation.x, worldRotation.y, worldRotation.z, worldRotation.w);
+
+        auto pos = G3D::CoordinateFrame{ { worldRotationQuat },{ GetPositionX(), GetPositionY(), GetPositionZ() } }
+        .toWorldSpace(G3D::Box{ { minX, minY, minZ },{ maxX, maxY, maxZ } }).center();
+
+        x = pos.x;
+        y = pos.y;
+        z = pos.z;
+    }
+    else
+    {
+        GetPosition(x, y, z);
+        z += 1.0f;
     }
 }
 

@@ -764,7 +764,7 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
         if ((pPlayer->GetLevel() < bg->GetMinLevel() || pPlayer->GetLevel() > bg->GetMaxLevel()) ||
             (pPlayer->GetTeam() != pBgEntrance->team))
         {
-            SendAreaTriggerMessage("You must be in the %s and at least %u%s level to enter.", pPlayer->GetTeam() == ALLIANCE ? "Alliance" : "Horde", bg->GetMinLevel(), bg->GetMinLevel() % 2 ? "st" : "th");
+            SendAreaTriggerMessage("You must be in the %s and at least %u%s level to enter.", pPlayer->GetTeam() == ALLIANCE ? "Horde" : "Alliance", bg->GetMinLevel(), bg->GetMinLevel() % 2 ? "st" : "th");
             return;
         }
 
@@ -776,8 +776,8 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
     if (pPlayer->InBattleGround())
     {
         if (BattleGround* bg = pPlayer->GetBattleGround())
-            bg->HandleAreaTrigger(pPlayer, triggerId);
-        return;
+            if (bg->HandleAreaTrigger(pPlayer, triggerId))
+                return;
     }
     if (ZoneScript* pZoneScript = pPlayer->GetZoneScript())
     {
@@ -854,7 +854,20 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
             }
             else
             {
-                SendAreaTriggerMessage(pTeleTrigger->message.c_str());
+                char const* message = pTeleTrigger->message.c_str();
+
+                int loc_idx = GetSessionDbLocaleIndex();
+                if (loc_idx >= 0)
+                {
+                    AreaTriggerLocale const* locale = sObjectMgr.GetAreaTriggerLocale(triggerId);
+                    if (locale)
+                    {
+                        if (locale->message.size() > size_t(loc_idx) && !locale->message[loc_idx].empty())
+                            message = locale->message[loc_idx].c_str();
+                    }
+                }
+
+                SendAreaTriggerMessage(message);
             }
             return;
         }
@@ -867,12 +880,24 @@ void WorldSession::HandleUpdateAccountData(WorldPacket& recv_data)
 {
     uint32 type, decompressedSize;
     recv_data >> type >> decompressedSize;
-    if (type > NUM_ACCOUNT_DATA_TYPES)
+
+    NewAccountData::AccountDataType dataType;
+    if (GetGameBuild() <= CLIENT_BUILD_1_8_4)
+        dataType = ConvertOldAccountDataToNew(type);
+    else
+        dataType = (NewAccountData::AccountDataType)type;
+
+    if (dataType >= NewAccountData::NUM_ACCOUNT_DATA_TYPES)
+    {
+        std::stringstream oss;
+        oss << "Client sent invalid account data type " << type << " in CMSG_UPDATE_ACCOUNT_DATA.";
+        ProcessAnticheatAction("PassiveAnticheat", oss.str().c_str(), CHEAT_ACTION_LOG);
         return;
+    }
 
     if (decompressedSize == 0)                              // erase
     {
-        SetAccountData(AccountDataType(type), "");
+        SetAccountData(dataType, "");
         return;
     }
 
@@ -883,35 +908,45 @@ void WorldSession::HandleUpdateAccountData(WorldPacket& recv_data)
         return;
     }
 
-    ByteBuffer dest;
+    std::vector<uint8> dest;
     dest.resize(decompressedSize);
 
     uint32 currentPosition = recv_data.rpos();
     uLongf realSize = decompressedSize;
-    uncompress(const_cast<uint8*>(dest.contents()), &realSize, const_cast<uint8*>(recv_data.contents() + currentPosition), recv_data.size() - currentPosition);
+    uncompress(const_cast<uint8*>(dest.data()), &realSize, const_cast<uint8*>(recv_data.contents() + currentPosition), recv_data.size() - currentPosition);
 
     recv_data.rpos(recv_data.wpos());                       // uncompress read (recv_data.size() - recv_data.rpos())
 
-    std::string adata;
-    dest >> adata;
-
-    SetAccountData(AccountDataType(type), adata);
+    std::string adata((char*)dest.data(), dest.size());
+    SetAccountData(dataType, adata);
 }
 
 void WorldSession::HandleRequestAccountData(WorldPacket& recv_data)
 {
     uint32 type;
     recv_data >> type;
-    if (type > NUM_ACCOUNT_DATA_TYPES)
-        return;
 
-    AccountData* adata = GetAccountData(AccountDataType(type));
+    NewAccountData::AccountDataType dataType;
+    if (GetGameBuild() <= CLIENT_BUILD_1_8_4)
+        dataType = ConvertOldAccountDataToNew(type);
+    else
+        dataType = (NewAccountData::AccountDataType)type;
+
+    if (dataType >= NewAccountData::NUM_ACCOUNT_DATA_TYPES)
+    {
+        std::stringstream oss;
+        oss << "Client requested invalid account data type " << type << " in CMSG_REQUEST_ACCOUNT_DATA.";
+        ProcessAnticheatAction("PassiveAnticheat", oss.str().c_str(), CHEAT_ACTION_LOG);
+        return;
+    }
+
+    AccountData* adata = GetAccountData(dataType);
 
     uint32 size = adata->data.size();
     if (!size)
     {
         WorldPacket data(SMSG_UPDATE_ACCOUNT_DATA, 4 + 4);
-        data << uint32(type);                                // type (0-7)
+        data << uint32(type);                                // use the original type sent by client
         data << uint32(0);                                   // decompressed length
         SendPacket(&data);
     }
@@ -924,7 +959,7 @@ void WorldSession::HandleRequestAccountData(WorldPacket& recv_data)
         compress(const_cast<uint8*>(dest.contents()), &destSize, (uint8*)adata->data.c_str(), size);
 
         WorldPacket data(SMSG_UPDATE_ACCOUNT_DATA, 4 + 4 + destSize + 1);
-        data << uint32(type);                                   // type (0-7)
+        data << uint32(type);                                   // use the original type sent by client
         data << uint32(size);                                   // decompressed length
         data.append(dest);                                      // compressed data
         SendPacket(&data);
@@ -1033,7 +1068,31 @@ void WorldSession::HandleInspectHonorStatsOpcode(WorldPacket& recv_data)
     if (_player->IsValidAttackTarget(pTarget))
         return;
 
-    WorldPacket data(MSG_INSPECT_HONOR_STATS, (8 + 1 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 1));
+    WorldPacket data(MSG_INSPECT_HONOR_STATS, (
+        8
+        + 1
+        + 4
+        + 4
+        + 4
+// World of Warcraft Client Patch 1.6.0 (2005-07-12)
+// - There is a new "This Week" section of the Honor tab, which will display PvP accomplishments of the current week.
+#if SUPPORTED_CLIENT_BUILD >= CLIENT_BUILD_1_6_1
+        + 4
+#endif
+        + 4
+        + 4
+        + 4
+        + 4
+#if SUPPORTED_CLIENT_BUILD >= CLIENT_BUILD_1_6_1
+        + 4
+#endif
+        + 4
+// World of Warcraft Client Patch 1.6.0 (2005-07-12)
+// - There is now a progress bar on the Honor tab of your character window that displays how close you are to your next rank.
+#if SUPPORTED_CLIENT_BUILD >= CLIENT_BUILD_1_6_1
+        + 1
+#endif
+    ));
 
     // player guid
     data << guid;
@@ -1056,11 +1115,13 @@ void WorldSession::HandleInspectHonorStatsOpcode(WorldPacket& recv_data)
     // Unknown (deprecated, last week dishonourable?)
     data << (uint16)0;
 
+#if SUPPORTED_CLIENT_BUILD >= CLIENT_BUILD_1_6_1
     // This Week Honorable kills
     data << pTarget->GetUInt16Value(PLAYER_FIELD_THIS_WEEK_KILLS, 0);
 
     // Unknown (deprecated, this week dishonourable?)
     data << (uint16)0;
+#endif
 
     // Lifetime Honorable Kills
     data << pTarget->GetUInt32Value(PLAYER_FIELD_LIFETIME_HONORBALE_KILLS);
@@ -1074,14 +1135,18 @@ void WorldSession::HandleInspectHonorStatsOpcode(WorldPacket& recv_data)
     // Last Week Honor
     data << pTarget->GetUInt32Value(PLAYER_FIELD_LAST_WEEK_CONTRIBUTION);
 
+#if SUPPORTED_CLIENT_BUILD >= CLIENT_BUILD_1_6_1
     // This Week Honor
     data << pTarget->GetUInt32Value(PLAYER_FIELD_THIS_WEEK_CONTRIBUTION);
+#endif
 
     // Last Week Standing
     data << pTarget->GetUInt32Value(PLAYER_FIELD_LAST_WEEK_RANK);
 
+#if SUPPORTED_CLIENT_BUILD >= CLIENT_BUILD_1_6_1
     // Rank progress bar
     data << (uint8)pTarget->GetByteValue(PLAYER_FIELD_BYTES2, PLAYER_FIELD_BYTES_2_OFFSET_HONOR_RANK_BAR);
+#endif
 
     SendPacket(&data);
 }
@@ -1090,8 +1155,12 @@ void WorldSession::HandleTeleportToUnitOpcode(WorldPacket& recv_data)
 {
     std::string playerName;
     recv_data >> playerName;
-    playerName = ".goname " + playerName;
-    ProcessChatMessageAfterSecurityCheck(playerName, LANG_UNIVERSAL, CHAT_MSG_SYSTEM);
+    if (playerName.length() > MAX_PLAYER_NAME)
+        return;
+
+    char txt[21] = {};
+    sprintf(txt, ".goname %s", playerName.c_str());
+    ProcessChatMessageAfterSecurityCheck(txt, LANG_UNIVERSAL, CHAT_MSG_SYSTEM);
 }
 
 void WorldSession::HandleWorldTeleportOpcode(WorldPacket& recv_data)
@@ -1249,6 +1318,7 @@ void WorldSession::HandleRequestPetInfoOpcode(WorldPacket& /*recv_data */)
 
 void WorldSession::HandleWardenDataOpcode(WorldPacket& recv_data)
 {
+#ifdef USE_ANTICHEAT
     if (!m_warden)
     {
         sLog.Player(GetAccountId(), LOG_ANTICHEAT, LOG_LVL_MINIMAL,
@@ -1256,5 +1326,7 @@ void WorldSession::HandleWardenDataOpcode(WorldPacket& recv_data)
         return;
     }
 
-    m_warden->HandlePacket(recv_data);
+    std::lock_guard<std::mutex> lock(m_warden->m_packetQueueMutex);
+    m_warden->m_packetQueue.emplace_back(std::move(recv_data));
+#endif
 }

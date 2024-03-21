@@ -342,6 +342,23 @@ namespace Spells
         return false;
     }
 
+    inline bool IsScriptTarget(uint32 target)
+    {
+        switch (target)
+        {
+            case TARGET_ENUM_UNITS_SCRIPT_AOE_AT_SRC_LOC:
+            case TARGET_ENUM_UNITS_SCRIPT_AOE_AT_DEST_LOC:
+            case TARGET_UNIT_SCRIPT_NEAR_CASTER:
+            case TARGET_GAMEOBJECT_SCRIPT_NEAR_CASTER:
+            case TARGET_LOCATION_SCRIPT_NEAR_CASTER:
+            case TARGET_ENUM_GAMEOBJECTS_SCRIPT_AOE_AT_SRC_LOC:
+            case TARGET_ENUM_GAMEOBJECTS_SCRIPT_AOE_AT_DEST_LOC:
+            case TARGET_ENUM_UNITS_SCRIPT_IN_CONE_60:
+                return true;
+        }
+        return false;
+    }
+
     inline bool IsAreaEffectPossitiveTarget(SpellTarget target)
     {
         switch (target)
@@ -503,7 +520,7 @@ class SpellEntry
         SpellEntry() = default;
         ~SpellEntry() = default;
 
-        /// DBC DATA:
+        // DBC DATA:
         uint32    Id = 0;                                          // 0
         uint32    School = 0;                                      // 1
         uint32    Category = 0;                                    // 2
@@ -597,7 +614,7 @@ class SpellEntry
       //uint32    MinReputation;                                   // 174 not used
       //uint32    RequiredAuraVision;                              // 175 not used
 
-        /// CUSTOM FIELDS:
+        // CUSTOM FIELDS:
         uint32 MinTargetLevel = 0;                                 // 162
         uint32 Custom = 0;                                         // 176
         uint32 Internal = 0;                                       // Assigned by the core.
@@ -775,6 +792,8 @@ class SpellEntry
             return hasAura;
         }
 
+        bool HasAuraOrTriggersAnotherSpellWithAura(AuraType aura) const;
+
         bool IsCustomSpell() const
         {
             return Internal & SPELL_INTERNAL_CUSTOM;
@@ -825,7 +844,7 @@ class SpellEntry
 
         bool IsDeathOnlySpell() const
         {
-            return HasAttribute(SPELL_ATTR_EX3_CAST_ON_DEAD) || 
+            return HasAttribute(SPELL_ATTR_EX3_ONLY_ON_GHOSTS) || 
                    (Targets & (TARGET_FLAG_PVP_CORPSE | TARGET_FLAG_UNIT_CORPSE | TARGET_FLAG_CORPSE)) ||
                    (Id == 2584);
         }
@@ -846,7 +865,7 @@ class SpellEntry
 
         bool IsDeathPersistentSpell() const
         {
-            return HasAttribute(SPELL_ATTR_EX3_DEATH_PERSISTENT);
+            return HasAttribute(SPELL_ATTR_EX3_ALLOW_AURA_WHILE_DEAD);
         }
 
         bool IsNonCombatSpell() const
@@ -982,7 +1001,7 @@ class SpellEntry
 
         bool HasRealTimeDuration() const
         {
-            return HasAttribute(SPELL_ATTR_EX4_REAL_TIME_DURATION);
+            return HasAttribute(SPELL_ATTR_EX4_AURA_EXPIRES_OFFLINE);
         }
 
         bool HasAuraWithSpellTriggerEffect() const
@@ -1113,6 +1132,7 @@ class SpellEntry
         uint32 GetCastTime(SpellCaster const* caster, Spell* spell = nullptr) const;
         uint32 GetCastTimeForBonus(DamageEffectType damagetype) const;
         uint16 GetAuraMaxTicks() const;
+        uint32 GetRank() const;
         WeaponAttackType GetWeaponAttackType() const;
         int32 CalculateSimpleValue(SpellEffectIndex eff) const { return EffectBasePoints[eff] + int32(EffectBaseDice[eff]); }
         float CalculateDefaultCoefficient(DamageEffectType const damagetype) const;

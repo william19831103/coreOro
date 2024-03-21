@@ -1359,6 +1359,7 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket* data, BattleGround *bg)
                 *data << (uint32)((BattleGroundWGScore*)score)->flagCaptures;         // Flag Captures
                 *data << (uint32)((BattleGroundWGScore*)score)->flagReturns;          // Flag Returns
                 break;
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_6_1
             case BATTLEGROUND_AB:
                 *data << (uint32)0x00000002;											// count of next fields
                 *data << (uint32)((BattleGroundABScore*)score)->basesAssaulted;			// bases asssulted
@@ -1385,6 +1386,7 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket* data, BattleGround *bg)
                 *data << (uint32)((ArenaScore*)score)->DamageDone;		// Damage Done
                 *data << (uint32)((ArenaScore*)score)->HealingDone;		// Healing Done
                 break;
+#endif
             default:
                 sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "Unhandled MSG_PVP_LOG_DATA for BG id %u", bg->GetTypeID());
                 *data << (uint32)0;
@@ -1403,8 +1405,7 @@ void BattleGroundMgr::BuildGroupJoinedBattlegroundPacket(WorldPacket* data, int3
 void BattleGroundMgr::BuildUpdateWorldStatePacket(WorldPacket* data, uint32 field, uint32 value)
 {
     data->Initialize(SMSG_UPDATE_WORLD_STATE, 4 + 4);
-    *data << uint32(field);
-    *data << uint32(value);
+    WriteUpdateWorldStatePair(*data, field, value);
 }
 
 void BattleGroundMgr::BuildPlaySoundPacket(WorldPacket* data, uint32 soundid)
@@ -1507,9 +1508,11 @@ BattleGround* BattleGroundMgr::CreateNewBattleGround(BattleGroundTypeId bgTypeId
         case BATTLEGROUND_WS:
             bg = new BattleGroundWS(*(BattleGroundWS*)bgTemplate);
             break;
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_6_1
         case BATTLEGROUND_AB:
             bg = new BattleGroundAB(*(BattleGroundAB*)bgTemplate);
             break;
+
         case BATTLEGROUND_NA1v1:
         case BATTLEGROUND_NA2v2:
         case BATTLEGROUND_NA3v3:
@@ -1529,6 +1532,8 @@ BattleGround* BattleGroundMgr::CreateNewBattleGround(BattleGroundTypeId bgTypeId
             bg = new Arena(*(Arena*)bgTemplate);
             break;
         //case BATTLEGROUND_AA:
+#endif
+
         default:
             //error, but it is handled few lines above
             return 0;
@@ -1559,9 +1564,11 @@ uint32 BattleGroundMgr::CreateBattleGround(BattleGroundTypeId bgTypeId, uint32 m
         case BATTLEGROUND_WS:
             bg = new BattleGroundWS;
             break;
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_6_1
         case BATTLEGROUND_AB:
             bg = new BattleGroundAB;
             break;
+
         case BATTLEGROUND_NA1v1:
         case BATTLEGROUND_NA2v2:
         case BATTLEGROUND_NA3v3:
@@ -1580,6 +1587,7 @@ uint32 BattleGroundMgr::CreateBattleGround(BattleGroundTypeId bgTypeId, uint32 m
         case BATTLEGROUND_DS5v5:
             bg = new Arena;
             break;
+#endif
         default:
             bg = new BattleGround;
             break;                           // placeholder for non implemented BG

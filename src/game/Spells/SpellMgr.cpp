@@ -319,7 +319,7 @@ void SpellMgr::LoadSpellProcEvents()
     mSpellProcEventMap.clear();                             // need for reload case
 
     //                                                                0        1             2                  3                   4                   5                   6            7         8          9               10
-    std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("SELECT `entry`, `SchoolMask`, `SpellFamilyName`, `SpellFamilyMask0`, `SpellFamilyMask1`, `SpellFamilyMask2`, `procFlags`, `procEx`, `ppmRate`, `CustomChance`, `Cooldown` FROM `spell_proc_event` WHERE (`build_min` <= %u) && (`build_max` >= %u)", SUPPORTED_CLIENT_BUILD, SUPPORTED_CLIENT_BUILD));
+    std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("SELECT `entry`, `SchoolMask`, `SpellFamilyName`, `SpellFamilyMask0`, `SpellFamilyMask1`, `SpellFamilyMask2`, `procFlags`, `procEx`, `ppmRate`, `CustomChance`, `Cooldown` FROM `spell_proc_event` WHERE %u BETWEEN `build_min` AND `build_max`", SUPPORTED_CLIENT_BUILD));
     if (!result)
     {
         BarGoLink bar(1);
@@ -639,7 +639,7 @@ void SpellMgr::LoadSpellGroupStackRules()
     sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded %u spell group stack rules", count);
 }
 
-bool SpellMgr::ListMorePowerfullSpells(uint32 spellId, std::list<uint32>& list) const
+bool SpellMgr::ListMorePowerfulSpells(uint32 spellId, std::vector<uint32>& list) const
 {
     std::vector<uint32> spellGroupIds;
     std::vector<uint32>::iterator spellGroupIdsIt;
@@ -682,7 +682,7 @@ bool SpellMgr::ListMorePowerfullSpells(uint32 spellId, std::list<uint32>& list) 
     return !list.empty();
 }
 
-bool SpellMgr::ListLessPowerfullSpells(uint32 spellId, std::list<uint32>& list) const
+bool SpellMgr::ListLessPowerfulSpells(uint32 spellId, std::vector<uint32>& list) const
 {
     std::vector<uint32> spellGroupIds;
     std::vector<uint32>::iterator spellGroupIdsIt;
@@ -942,7 +942,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     if ((spellInfo_1->Id == 21992 && spellInfo_2->Id == 27648) ||
                             (spellInfo_2->Id == 21992 && spellInfo_1->Id == 27648))
                         return false;
-
+                    
+                    // Atiesh aura stacking with Moonkin Aura
+                    if (spellInfo_1->SpellIconID == 46 && spellInfo_2->SpellIconID == 46)
+                        return false;
+                    
                     // Soulstone Resurrection and Twisting Nether (resurrector)
                     if (spellInfo_1->SpellIconID == 92 && spellInfo_2->SpellIconID == 92 && (
                                 (spellInfo_1->SpellVisual == 99 && spellInfo_2->SpellVisual == 0) ||
@@ -1264,6 +1268,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
         return false;
 
     if (spellInfo_1->SpellFamilyName != spellInfo_2->SpellFamilyName)
+        return false;
+
+    // Why would a buff and a debuff ever be exclusive with each other?
+    // Fixes Corrupted Mind getting removed by Lightning Shield.
+    if (spellInfo_1->IsPositiveSpell() != spellInfo_2->IsPositiveSpell())
         return false;
 
     // potions work differently
@@ -2133,7 +2142,7 @@ void SpellMgr::LoadSpellScriptTarget()
                     sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Table `spell_script_target`: target entry == 0 for not GO target type (%u).", type);
                     continue;
                 }
-                if (CreatureInfo const* cInfo = sCreatureStorage.LookupEntry<CreatureInfo>(targetEntry))
+                if (CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(targetEntry))
                 {
                     if (spellId == 30427 && !cInfo->skinning_loot_id)
                     {
@@ -2260,7 +2269,7 @@ void SpellMgr::LoadSpellPetAuras()
     sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded %u spell pet auras", count);
 }
 
-/// Some checks for spells, to prevent adding deprecated/broken spells for trainers, spell book, etc
+// Some checks for spells, to prevent adding deprecated/broken spells for trainers, spell book, etc
 bool SpellMgr::IsSpellValid(SpellEntry const* spellInfo, Player* pl, bool msg)
 {
     // not exist
@@ -2560,10 +2569,10 @@ void SpellMgr::LoadSpellAreas()
 
 SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spellInfo, Unit const* caster, Player const* player)
 {
-    // Spell casted only on battleground
-    if ((spellInfo->AttributesEx3 & SPELL_ATTR_EX3_BATTLEGROUND))
-        if (!player || !player->InBattleGround())
-            return SPELL_FAILED_ONLY_BATTLEGROUNDS;
+    // Spell can be casted only in battleground
+    if (spellInfo->HasAttribute(SPELL_ATTR_EX3_ONLY_BATTLEGROUNDS) &&
+        (!player || !player->InBattleGround()))
+        return SPELL_FAILED_ONLY_BATTLEGROUNDS;
 
     uint32 mapId = caster ? caster->GetMapId() : (player ? player->GetMapId() : 0);
 

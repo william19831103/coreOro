@@ -496,13 +496,13 @@ void GameEventMgr::LoadFromDB()
             newData.spell_id_start = fields[5].GetUInt32();
             newData.spell_id_end = fields[6].GetUInt32();
 
-            if (newData.equipment_id && !sObjectMgr.GetEquipmentInfo(newData.equipment_id))
+            if (newData.equipment_id && !sObjectMgr.GetEquipmentTemplate(newData.equipment_id))
             {
                 sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Table `game_event_creature_data` have creature (Guid: %u) with equipment_id %u not found in table `creature_equip_template`, set to no equipment.", guid, newData.equipment_id);
                 newData.equipment_id = 0;
             }
 
-            if (newData.entry_id && !ObjectMgr::GetCreatureTemplate(newData.entry_id))
+            if (newData.entry_id && !sObjectMgr.GetCreatureTemplate(newData.entry_id))
             {
                 if (!sObjectMgr.IsExistingCreatureId(newData.entry_id))
                     sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Table `game_event_creature_data` have creature (Guid: %u) with event time entry %u not found in table `creature_template`, set to no 0.", guid, newData.entry_id);
@@ -657,7 +657,7 @@ void GameEventMgr::LoadFromDB()
                 continue;
             }
 
-            if (!ObjectMgr::GetCreatureTemplate(mail.senderEntry))
+            if (!sObjectMgr.GetCreatureTemplate(mail.senderEntry))
             {
                 sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Table `game_event_mail` have nonexistent sender creature entry (%u) for game event %i that invalid not include any player races, ignoring.", mail.senderEntry, event_id);
                 continue;
@@ -999,7 +999,7 @@ struct GameEventUpdateCreatureDataInMapsWorker
     {
         if (Creature* pCreature = map->GetCreature(i_guid))
         {
-            pCreature->UpdateEntry(pCreature->GetOriginalEntry(), i_data, i_activate ? i_event_data : nullptr);
+            pCreature->UpdateEntry(pCreature->GetOriginalEntry(), i_activate ? i_event_data : nullptr);
 
             // spells not casted for event remove case (sent nullptr into update), do it
             if (!i_activate)

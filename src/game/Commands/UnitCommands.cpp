@@ -128,7 +128,7 @@ bool ChatHandler::HandleGPSCommand(char* args)
                     obj->GetMapId(), (mapEntry ? mapEntry->name : "<unknown>"),
                     zone_id, zoneName.c_str(), area_id, areaName.c_str(),
                     obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientation(),
-                    cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
+                    gx, gy, cell.CellX(), cell.CellY(), obj->GetInstanceId(),
                     zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
 
     if (GenericTransport* transport = obj->GetTransport())
@@ -153,7 +153,7 @@ bool ChatHandler::HandleGPSCommand(char* args)
               obj->GetMapId(), (mapEntry ? mapEntry->name : "<unknown>"),
               zone_id, zoneName.c_str(), area_id, areaName.c_str(),
               obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientation(),
-              cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
+              gx, gy, cell.CellX(), cell.CellY(), obj->GetInstanceId(),
               zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
 
     GridMapLiquidData liquid_status;
@@ -377,12 +377,12 @@ bool ChatHandler::HandleUnitStatInfoCommand(char* args)
 #else
     PSendSysMessage("Casting speed mod: %i", pTarget->GetInt32Value(UNIT_MOD_CAST_SPEED));
 #endif
-    PSendSysMessage("Base strenght: %g", pTarget->GetCreateStat(STAT_STRENGTH));
+    PSendSysMessage("Base strength: %g", pTarget->GetCreateStat(STAT_STRENGTH));
     PSendSysMessage("Base agility: %g", pTarget->GetCreateStat(STAT_AGILITY));
     PSendSysMessage("Base stamina: %g", pTarget->GetCreateStat(STAT_STAMINA));
     PSendSysMessage("Base intellect: %g", pTarget->GetCreateStat(STAT_INTELLECT));
     PSendSysMessage("Base spirit: %g", pTarget->GetCreateStat(STAT_SPIRIT));
-    PSendSysMessage("Total strenght: %g", pTarget->GetStat(STAT_STRENGTH));
+    PSendSysMessage("Total strength: %g", pTarget->GetStat(STAT_STRENGTH));
     PSendSysMessage("Total agility: %g", pTarget->GetStat(STAT_AGILITY));
     PSendSysMessage("Total stamina: %g", pTarget->GetStat(STAT_STAMINA));
     PSendSysMessage("Total intellect: %g", pTarget->GetStat(STAT_INTELLECT));
@@ -446,12 +446,15 @@ bool ChatHandler::HandleUnitStatInfoCommand(char* args)
     PSendSysMessage("Frost spell crit chance: %g", pPlayer->GetSpellCritPercent(SPELL_SCHOOL_FROST));
     PSendSysMessage("Shadow spell crit chance: %g", pPlayer->GetSpellCritPercent(SPELL_SCHOOL_SHADOW));
     PSendSysMessage("Arcane spell crit chance: %g", pPlayer->GetSpellCritPercent(SPELL_SCHOOL_ARCANE));
-    PSendSysMessage("Positive strenght: %g", pPlayer->GetPosStat(STAT_STRENGTH));
+    PSendSysMessage("Melee hit chance: %g", pPlayer->GetWeaponBasedAuraModifier(BASE_ATTACK, SPELL_AURA_MOD_HIT_CHANCE));
+    PSendSysMessage("Ranged hit chance: %g", pPlayer->GetWeaponBasedAuraModifier(RANGED_ATTACK, SPELL_AURA_MOD_HIT_CHANCE));
+    PSendSysMessage("Spell hit chance: %g", pPlayer->m_modSpellHitChance);
+    PSendSysMessage("Positive strength: %g", pPlayer->GetPosStat(STAT_STRENGTH));
     PSendSysMessage("Positive agility: %g", pPlayer->GetPosStat(STAT_AGILITY));
     PSendSysMessage("Positive stamina: %g", pPlayer->GetPosStat(STAT_STAMINA));
     PSendSysMessage("Positive intellect: %g", pPlayer->GetPosStat(STAT_INTELLECT));
     PSendSysMessage("Positive spirit: %g", pPlayer->GetPosStat(STAT_SPIRIT));
-    PSendSysMessage("Negative strenght: %g", pPlayer->GetNegStat(STAT_STRENGTH));
+    PSendSysMessage("Negative strength: %g", pPlayer->GetNegStat(STAT_STRENGTH));
     PSendSysMessage("Negative agility: %g", pPlayer->GetNegStat(STAT_AGILITY));
     PSendSysMessage("Negative stamina: %g", pPlayer->GetNegStat(STAT_STAMINA));
     PSendSysMessage("Negative intellect: %g", pPlayer->GetNegStat(STAT_INTELLECT));
@@ -572,6 +575,8 @@ bool ChatHandler::HandleUnitFactionInfoCommand(char* args)
     }
     if (!friends.empty())
         PSendSysMessage("Friends: %s", friends.c_str());
+
+    PSendSysMessage("Is Enemy of Another: %s", pFactionTemplate->isEnemyOfAnother ? "True" : "False");
 
     return true;
 }
@@ -854,6 +859,28 @@ bool ChatHandler::HandleUnitShowCreateSpellCommand(char* args)
     return true;
 }
 
+bool ChatHandler::HandlePvPCommand(char* args)
+{
+    Unit* pTarget = GetSelectedUnit();
+    if (!pTarget)
+        return false;
+    
+    bool value;
+    if (!ExtractOnOff(&args, value))
+    {
+        SendSysMessage(LANG_USE_BOL);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    if (Player* pPlayer = pTarget->ToPlayer())
+        pPlayer->UpdatePvP(value, true);
+    else
+        pTarget->SetPvP(value);
+
+    return true;
+}
+
 bool ChatHandler::HandleFreezeCommand(char* args)
 {
     Unit* pTarget = GetSelectedUnit();
@@ -874,13 +901,13 @@ bool ChatHandler::HandleUnfreezeCommand(char* args)
 
 bool ChatHandler::HandlePossessCommand(char *args)
 {
-    Unit* tar = GetSelectedUnit();
-    if (!tar)
+    Unit* target = GetSelectedUnit();
+    if (!target)
     {
         SendSysMessage(LANG_SELECT_CHAR_OR_CREATURE);
         return false;
     }
-    m_session->GetPlayer()->CastSpell(tar, 530, true);
+    m_session->GetPlayer()->CastCustomSpell(target, 530, 255, {}, {}, true);
     return true;
 }
 
@@ -2256,6 +2283,22 @@ bool ChatHandler::HandleModifyManaCommand(char* args)
     return true;
 }
 
+bool ChatHandler::HandleDeplenishCommand(char* args)
+{
+    Unit* pUnit = GetSelectedUnit();
+    if (!pUnit || !pUnit->IsAlive())
+    {
+        SendSysMessage(LANG_SELECT_CHAR_OR_CREATURE);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    pUnit->SetHealth(1);
+    pUnit->SetPower(pUnit->GetPowerType(), 0);
+
+    return true;
+}
+
 bool ChatHandler::HandleReplenishCommand(char* args)
 {
     Unit* pUnit = GetSelectedUnit();
@@ -2573,7 +2616,7 @@ bool ChatHandler::HandleDieHelper(Unit* target)
         if (HasLowerSecurity((Player*)target, ObjectGuid(), false))
             return false;
 
-        if (player->IsGod())
+        if (player->GetInvincibilityHpThreshold())
             player->SetCheatGod(false);
     }
 

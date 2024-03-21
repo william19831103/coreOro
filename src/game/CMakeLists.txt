@@ -149,6 +149,7 @@ set (game_SRCS
     Maps/ZoneScriptMgr.cpp
     Maps/Pool/PoolManager.cpp
     Movement/ConfusedMovementGenerator.cpp
+    Movement/CyclicMovementGenerator.cpp
     Movement/FearMovementGenerator.cpp
     Movement/FleeingMovementGenerator.cpp
     Movement/FollowerReference.cpp
@@ -216,10 +217,12 @@ set (game_SRCS
     vmap/VMapFactory.cpp
     vmap/VMapManager2.cpp
     vmap/WorldModel.cpp
+    AccountData.h
     AccountMgr.h
     AuraRemovalMgr.h
     AutoBroadCastMgr.h
     Camera.h
+    ClientDefines.h
     Conditions.h
     CreatureGroups.h
     Formulas.h
@@ -234,6 +237,7 @@ set (game_SRCS
     ItemEnchantmentMgr.h
     Language.h
     LootMgr.h
+    LoveIsInTheAir.h
     ObjectAccessor.h
     ObjectGridLoader.h
     ObjectGuid.h
@@ -251,6 +255,7 @@ set (game_SRCS
     Weather.h
     World.h
     WorldSession.h
+    WorldStates.h
     AI/BasicAI.h
     AI/CreatureAI.h
     AI/CreatureAIImpl.h
@@ -280,6 +285,7 @@ set (game_SRCS
     Battlegrounds/BattleGroundAB.h
     Battlegrounds/BattleGroundAV.h
     Battlegrounds/BattleGroundMgr.h
+    Battlegrounds/BattleGroundDefines.h
     Battlegrounds/BattleGroundWS.h
     Battlegrounds/Arena.h
     Chat/Channel.h
@@ -333,6 +339,7 @@ set (game_SRCS
     Maps/ZoneScriptMgr.h
     Maps/Pool/PoolManager.h
     Movement/ConfusedMovementGenerator.h
+    Movement/CyclicMovementGenerator.h
     Movement/FearMovementGenerator.h
     Movement/FleeingMovementGenerator.h
     Movement/FollowerReference.h

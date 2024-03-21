@@ -28,6 +28,7 @@
 #include "SpellCaster.h"
 #include "LootMgr.h"
 #include "Util.h"
+#include <shared_mutex>
 
 class Unit;
 class GameObjectAI;
@@ -50,7 +51,7 @@ class GameObject : public SpellCaster
 
         virtual bool Create(uint32 guidlow, uint32 name_id, Map* map, float x, float y, float z, float ang, float rotation0, float rotation1, float rotation2, float rotation3, uint32 animprogress, GOState go_state);
         void Update(uint32 update_diff, uint32 p_time) override;
-        GameObjectInfo const* GetGOInfo() const;
+        GameObjectInfo const* GetGOInfo() const { return m_goInfo; }
 
         bool HasStaticDBSpawnData() const;                  // listed in `gameobject` table and have fixed in DB guid
         uint32 GetDBTableGUIDLow() const { return HasStaticDBSpawnData() ? GetGUIDLow() : 0; }
@@ -58,8 +59,9 @@ class GameObject : public SpellCaster
         void UpdateRotationFields(float rotation2 = 0.0f, float rotation3 = 0.0f);
         QuaternionData const GetLocalRotation() const;
 
+        char const* GetName() const final { return GetGOInfo()->name; }
         // overwrite WorldObject function for proper name localization
-        char const* GetNameForLocaleIdx(int32 locale_idx) const override;
+        char const* GetNameForLocaleIdx(int32 locale_idx) const final;
 
         void SaveToDB();
         void SaveToDB(uint32 mapid);
@@ -226,6 +228,7 @@ class GameObject : public SpellCaster
         GameObjectModel* m_model;
         void UpdateModelPosition();
 
+        void GetLosCheckPosition(float& x, float& y, float& z) const final;
         float GetStationaryX() const { if (GetGOInfo()->type != GAMEOBJECT_TYPE_MO_TRANSPORT) return m_stationaryPosition.x; return 0.f; }
         float GetStationaryY() const { if (GetGOInfo()->type != GAMEOBJECT_TYPE_MO_TRANSPORT) return m_stationaryPosition.y; return 0.f; }
         float GetStationaryZ() const { if (GetGOInfo()->type != GAMEOBJECT_TYPE_MO_TRANSPORT) return m_stationaryPosition.z; return 0.f; }
@@ -271,7 +274,7 @@ class GameObject : public SpellCaster
         // collected only for GAMEOBJECT_TYPE_SUMMONING_RITUAL
         ObjectGuid m_firstUser;                             // first GO user, in most used cases owner, but in some cases no, for example non-summoned multi-use GAMEOBJECT_TYPE_SUMMONING_RITUAL
         GuidsSet m_UniqueUsers;                             // all players who use item, some items activated after specific amount unique uses
-        std::mutex m_UniqueUsers_lock;
+        std::shared_timed_mutex m_UniqueUsers_lock;
         ObjectGuid m_summonTarget;                          // The player who is being summoned
 
         uint64 m_rotation;
